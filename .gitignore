@@ -1,0 +1,12 @@
+# Environment Variables
+.env
+
+# Virtual Environment
+.venv
+
+# Logs
+logs/*.log
+
+# Teaching Agents
+CLAUDE.md
+AGENTS.md
