@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Helper functions
-from src.helpers import is_path_ready
-from src.logging import logger
+from helpers import is_path_ready
+from logger import logger
 
 # Backup rsync job list
 backup_jobs = [
@@ -67,7 +67,7 @@ def run_rsync_job(job: dict) -> None:
 
 
 
-# Main loop
+# Main forloop
 def main() -> None:
     for job in backup_jobs:
         run_rsync_job(job)
