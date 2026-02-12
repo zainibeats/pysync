@@ -14,38 +14,15 @@ from src.logging import logger
 
 # Backup rsync job list
 backup_jobs = [
-    # Cryptomator backup
+    # test backup
     {
-        "name": "Cryptomator backup",
-        "source": os.getenv("CRYPTOMATOR_SOURCE"),
-        "dest": os.getenv("SYNCTHING_DESKTOP_DIR"),
+        "name": "Test backup",
+        "source": os.getenv("TEST_SOURCE"),
+        "dest": os.getenv("TEST_DEST"),
         "exclude-from": None,
         "flags": ["-av", "--delete"],
     },
-    # Dropbox backup
-    {
-        "name": "Dropbox backup",
-        "source": os.getenv("DROPBOX_SOURCE"),
-        "dest": os.getenv("SYNCTHING_DESKTOP_DIR"),
-        "exclude-from": os.getenv("RSYNC_EXCLUDES_FILE"),
-        "flags": ["-av", "--delete"],
-    },
-    # Ubuntu server home directory backup
-    {
-        "name": "Ubuntu home",
-        "source": os.getenv("UBUNTU_HOME_SOURCE"),
-        "dest": os.path.join(os.getenv("SYNCTHING_UBUNTU_DIR"), "home"),
-        "exclude-from": os.getenv("RSYNC_EXCLUDES_FILE"),
-        "flags": ["-av", "--delete"],
-    },
 ]
-
-
-# Main loop
-def main() -> None:
-    for job in backup_jobs:
-        run_rsync_job(job)
-
 
 # Rsync function
 def run_rsync_job(job: dict) -> None:
@@ -87,6 +64,13 @@ def run_rsync_job(job: dict) -> None:
             f"Job {job['name']} failed (exit {exc.returncode}):\n"
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
+
+
+
+# Main loop
+def main() -> None:
+    for job in backup_jobs:
+        run_rsync_job(job)
 
 
 if __name__ == "__main__":
