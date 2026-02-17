@@ -1,0 +1,48 @@
+{
+    "settings": {
+        "mount_all_before_sync": false
+    },
+
+    "sources": [
+        {
+            "name": "test-source-1",
+            "path": "~/Documents/test-dir/source-1/",
+            "external": false
+        },
+        {
+            "name": "test-source-2",
+            "path": "~/Documents/test-dir/source-2/",
+            "external": false
+        }
+    ],
+
+    "destinations": [
+        {
+            "name": "test-dest-1",
+            "path": "~/Documents/test-dir/dest-1",
+            "external": false
+        },
+        {
+            "name": "test-dest-2",
+            "path": "~/Documents/test-dir/dest-2",
+            "external": false
+        }
+    ],
+
+    "jobs": [
+        {
+            "name": "Test backup",
+            "source": "test-source-1",
+            "destination": "test-dest-2",
+            "exclude_from": null,
+            "flags": ["-av", "--delete"]
+        },
+        {
+            "name": "Test backup 2",
+            "source": "test-source-1",
+            "destination": "test-dest-1",
+            "exclude_from": "~/Documents/rsync-excludes.txt",
+            "flags": ["-av", "--delete"]
+        }
+    ]
+}
