@@ -10,3 +10,8 @@ logs/*.log
 # Teaching Agents
 CLAUDE.md
 AGENTS.md
+
+
+# Python
+
+__pycache__/
