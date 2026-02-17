@@ -4,54 +4,39 @@ import os
 import subprocess
 import json
 
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
 # Helper functions
 from helpers import is_path_ready
 from logger import logger
 
 # Backup rsync job list
-backup_jobs = [
-    # test backup
-    {
-        "name": "Test backup 1",
-        "source": os.getenv("TEST_SOURCE_1"),
-        "dest": os.getenv("TEST_DEST_1"),
-        "exclude-from": None,
-        "flags": ["-av", "--delete"],
-    },
-    {
-        "name": "Test backup 2",
-        "source": os.getenv("TEST_SOURCE_2"),
-        "dest": os.getenv("TEST_DEST_2"),
-        "exclude-from": None,
-        "flags": ["-av", "--delete"],
-    },
-
-]
+with open('config.json', 'r') as file:
+    data = json.load(file)
+    backup_jobs = data['jobs']
 
 # Rsync function
 def run_rsync_job(job: dict) -> None:
-    # Set source and destination variables
-    src = job["source"]
-    dst = job["dest"]
+
+    # Set source and destination if name matches job parameters    
+    for source in data["sources"]:
+        if source["name"] == job["source"]:
+            src = os.path.expanduser(source["path"])
+    for destination in data["destinations"]:
+        if destination["name"] == job["destination"]:
+            dst = os.path.expanduser(destination["path"])
 
     # Skip if source or destination is not ready
-    if not is_path_ready(src):
+    if not is_path_ready(src, source["external"]):
         logger.warning(f"Source not ready: {src}")
         return
-    if not is_path_ready(dst):
+    if not is_path_ready(dst, destination["external"]):
         logger.warning(f"Destination not ready: {dst}")
         return
 
     # Begin building rsync command
     cmd = ["rsync"] + job["flags"]
     # Add exclusion list if marked as so
-    if job["exclude-from"]:
-        cmd += ["--exclude-from", job["exclude-from"]]
+    if job["exclude_from"]:
+        cmd += ["--exclude-from", os.path.expanduser(job["exclude_from"])]
     # Add source and destination
     cmd += [src, dst]
 
@@ -73,7 +58,6 @@ def run_rsync_job(job: dict) -> None:
             f"Job {job['name']} failed (exit {exc.returncode}):\n"
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
-
 
 
 # Main for loop
