@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import json
 
 from dotenv import load_dotenv
 
@@ -16,12 +17,20 @@ from logger import logger
 backup_jobs = [
     # test backup
     {
-        "name": "Test backup",
-        "source": os.getenv("TEST_SOURCE"),
-        "dest": os.getenv("TEST_DEST"),
+        "name": "Test backup 1",
+        "source": os.getenv("TEST_SOURCE_1"),
+        "dest": os.getenv("TEST_DEST_1"),
         "exclude-from": None,
         "flags": ["-av", "--delete"],
     },
+    {
+        "name": "Test backup 2",
+        "source": os.getenv("TEST_SOURCE_2"),
+        "dest": os.getenv("TEST_DEST_2"),
+        "exclude-from": None,
+        "flags": ["-av", "--delete"],
+    },
+
 ]
 
 # Rsync function
@@ -67,7 +76,7 @@ def run_rsync_job(job: dict) -> None:
 
 
 
-# Main forloop
+# Main for loop
 def main() -> None:
     for job in backup_jobs:
         run_rsync_job(job)
