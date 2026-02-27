@@ -7,12 +7,12 @@
         {
             "name": "test-source-1",
             "path": "~/Documents/test-dir/source-1/",
-            "external": false
+            "type": "local"
         },
         {
             "name": "test-source-2",
             "path": "~/Documents/test-dir/source-2/",
-            "external": false
+            "type": "local"
         }
     ],
 
@@ -20,12 +20,12 @@
         {
             "name": "test-dest-1",
             "path": "~/Documents/test-dir/dest-1",
-            "external": false
+            "type": "local"
         },
         {
             "name": "test-dest-2",
             "path": "~/Documents/test-dir/dest-2",
-            "external": false
+            "type": "local"
         }
     ],
 

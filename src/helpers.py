@@ -1,17 +1,16 @@
-# helpers.py
-
 import os
 
 
-def is_path_ready(path: str, external: bool) -> bool:
+def is_path_ready(path: str, type: str, mount_point=None) -> bool:
     path = os.path.expanduser(path)
-    if not os.path.isdir(path):
-        return False
-    if not external:
+    if type == "local":
         return True
-    try:
-        # Checks if path is mount point
-        return bool (os.path.ismount(path))
-    except PermissionError:
-        # Permission denied → treat as not ready
-        return False
+    elif type == "external":
+        return bool (os.path.isdir(path))
+    # Type equals NFS
+    else:
+        try:
+            # Checks if path is mount point
+            return bool (os.path.ismount(mount_point))
+        except PermissionError:
+            return False
