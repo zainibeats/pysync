@@ -36,7 +36,7 @@ These are the folders you want to back up:
     {
         "name": "my-documents",
         "path": "/home/user/Documents",
-        "external": false
+        "type": "local"
     }
 ]
 ```
@@ -50,7 +50,7 @@ These are where the backups get saved to:
     {
         "name": "backup-drive",
         "path": "/media/user/Backup/backups",
-        "external": true
+        "type": "external"
     }
 ]
 ```
