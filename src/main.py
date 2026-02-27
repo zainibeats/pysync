@@ -1,5 +1,3 @@
-# main.py
-
 import os
 import subprocess
 import json
@@ -20,15 +18,17 @@ def run_rsync_job(job: dict) -> None:
     for source in data["sources"]:
         if source["name"] == job["source"]:
             src = os.path.expanduser(source["path"])
+            src_mp = source.get("mount_point")
     for destination in data["destinations"]:
         if destination["name"] == job["destination"]:
             dst = os.path.expanduser(destination["path"])
+            dst_mp = destination.get("mount_point")
 
     # Skip if source or destination is not ready
-    if not is_path_ready(src, source["external"]):
+    if not is_path_ready(src, source["type"], src_mp):
         logger.warning(f"Source not ready: {src}")
         return
-    if not is_path_ready(dst, destination["external"]):
+    if not is_path_ready(dst, destination["type"], dst_mp):
         logger.warning(f"Destination not ready: {dst}")
         return
 
