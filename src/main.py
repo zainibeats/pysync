@@ -7,22 +7,37 @@ from helpers import is_path_ready
 from logger import logger
 
 # Backup rsync job list
-with open('config.json', 'r') as file:
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
+with open(CONFIG_FILE, 'r') as file:
     data = json.load(file)
     backup_jobs = data['jobs']
 
 # Rsync function
 def run_rsync_job(job: dict) -> None:
 
-    # Set source and destination if name matches job parameters    
-    for source in data["sources"]:
-        if source["name"] == job["source"]:
-            src = os.path.expanduser(source["path"])
-            src_mp = source.get("mount_point")
-    for destination in data["destinations"]:
-        if destination["name"] == job["destination"]:
-            dst = os.path.expanduser(destination["path"])
-            dst_mp = destination.get("mount_point")
+    # Set source and destination if name matches job parameters
+    src = dst = None
+    source = destination = None
+    for s in data["sources"]:
+        if s["name"] == job["source"]:
+            src = os.path.expanduser(s["path"])
+            src_mp = s.get("mount_point")
+            source = s
+            break
+    for d in data["destinations"]:
+        if d["name"] == job["destination"]:
+            dst = os.path.expanduser(d["path"])
+            dst_mp = d.get("mount_point")
+            destination = d
+            break
+
+    # Skip job if source or destination name not found in config
+    if source is None:
+        logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
+        return
+    if destination is None:
+        logger.error(f"Job '{job['name']}' skipped: destination '{job['destination']}' not found in config.")
+        return
 
     # Skip if source or destination is not ready
     if not is_path_ready(src, source["type"], src_mp):
