@@ -11,6 +11,7 @@ def is_path_ready(path: str, type: str, mount_point=None) -> bool:
     else:
         try:
             # Checks if path is mount point
-            return bool (os.path.ismount(mount_point))
-        except PermissionError:
+            return bool (os.path.ismount(os.path.expanduser(mount_point)))
+        except (PermissionError, TypeError):
             return False
+
