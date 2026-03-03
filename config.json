@@ -5,29 +5,18 @@
 
     "sources": [
         {
-            "name": "test-source-1",
-            "path": "~/Documents/test-dir/source-1/",
-            "type": "local",
-            "mount_point": null
+            "name": "testnfs1",
+            "path": "~/remote_mount/testnfs1/",
+            "type": "nfs",
+            "mount_point": "~/remote_mount/testnfs1"
         },
+
         {
-            "name": "test-source-2",
-            "path": "~/Documents/test-dir/source-2/",
-            "type": "local",
-            "mount_point": null
-        },
-        {
-            "name": "test-source-3",
-            "path": "~/Documents/test-dir/source-2/",
-            "type": "local",
-            "mount_point": null
-        },
-        {
-            "name": "test-source-4",
-            "path": "~/Documents/test-dir/source-2/",
-            "type": "local",
-            "mount_point": null
-        }
+            "name": "testnfs3",
+            "path": "~/remote_mount/testnfs3/",
+            "type": "nfs",
+            "mount_point": "~/remote_mount/testnfs3"
+        } 
 
     ],
 
@@ -45,33 +34,27 @@
             "mount_point": null
         },
         {
-            "name": "testnfs1",
-            "path": "~/remote_mount/testnfs1",
-            "type": "nfs",
-            "mount_point": "~/remote_mount/testnfs1"
-        },
-        {
             "name": "testnfs2",
-            "path": "~/remote_mount/testnfs2",
+            "path": "~/remote_mount/testnfs2/",
             "type": "nfs",
             "mount_point": "~/remote_mount/testnfs2"
-        },
-          {
-            "name": "testnfs3",
-            "path": "~/remote_mount/testnfs3",
-            "type": "nfs",
-            "mount_point": "~/remote_mount/testnfs3"
-        }      
-
+        }
     ],
 
     "jobs": [
         {
             "name": "Test backup",
             "source": "testnfs1",
-            "destination": "testnfs3",
+            "destination": "testnfs2",
             "exclude_from": null,
             "flags": ["-av", "--delete"]
-        }      
+        },
+        {
+            "name": "Test backup 2",
+            "source": "testnfs3",
+            "destination": "test-dest-2",
+            "exclude_from": null,
+            "flags": ["-av", "--delete"]
+        }        
     ]
 }
