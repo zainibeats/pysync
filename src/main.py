@@ -1,9 +1,11 @@
 import os
+import sys
 import subprocess
 import json
+import time
 
 # Helper functions
-from helpers import is_path_ready
+from helpers import is_path_ready, prompt_user
 from logger import logger
 
 # Backup rsync job list
@@ -12,9 +14,7 @@ with open(CONFIG_FILE, 'r') as file:
     data = json.load(file)
     backup_jobs = data['jobs']
 
-# Rsync function
-def run_rsync_job(job: dict) -> None:
-
+def build_rsync_command(job: dict) -> list:
     # Set source and destination if name matches job parameters
     src = dst = None
     source = destination = None
@@ -52,10 +52,18 @@ def run_rsync_job(job: dict) -> None:
     # Add exclusion list if marked as so
     if job["exclude_from"]:
         cmd += ["--exclude-from", os.path.expanduser(job["exclude_from"])]
-    # Add source and destination
     cmd += [src, dst]
+    return cmd
 
+def build_command_list(cmd: list) -> str:
+    result = ''.join(str(word) for word in cmd)
+    hr_cmd = ''.join(result) + "\n"
+    return hr_cmd
+
+# Rsync function
+def run_rsync_job(command: dict) -> None:
     # Logs upcoming rsync command
+    print("Running rsync commands...")
     logger.info(f"Running rsync: {' '.join(cmd)}")
     try:
         # Execute the rsync command, capturing output and raising on error
@@ -74,11 +82,23 @@ def run_rsync_job(job: dict) -> None:
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
 
-
 # Main for loop
 def main() -> None:
+
     for job in backup_jobs:
-        run_rsync_job(job)
+        cmd = build_rsync_command(job)
+        hr_cmd = ''.join(build_command_list(cmd)) + "\n"
+
+    result = prompt_user(hr_cmd)
+    
+    if result == True:
+        run_rsync_job(cmd)
+        time.sleep(3)
+        print("Syncing complete!")
+        sys.exit()
+    else:
+        print("Quitting PySync...")
+        sys.exit()
 
 
 if __name__ == "__main__":
