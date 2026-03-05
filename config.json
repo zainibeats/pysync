@@ -7,14 +7,14 @@
         {
             "name": "testnfs1",
             "path": "~/remote_mount/testnfs1/",
-            "type": "nfs",
+            "filesystem": "nfs",
             "mount_point": "~/remote_mount/testnfs1"
         },
 
         {
             "name": "testnfs3",
             "path": "~/remote_mount/testnfs3/",
-            "type": "nfs",
+            "filesystem": "nfs",
             "mount_point": "~/remote_mount/testnfs3"
         } 
 
@@ -24,19 +24,19 @@
         {
             "name": "test-dest-1",
             "path": "~/Documents/test-dir/dest-1",
-            "type": "local",
+            "filesystem": "local",
             "mount_point": null
         },
         {
             "name": "test-dest-2",
             "path": "~/Documents/test-dir/dest-2",
-            "type": "local",
+            "filesystem": "local",
             "mount_point": null
         },
         {
             "name": "testnfs2",
             "path": "~/remote_mount/testnfs2/",
-            "type": "nfs",
+            "filesystem": "nfs",
             "mount_point": "~/remote_mount/testnfs2"
         }
     ],

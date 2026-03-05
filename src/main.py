@@ -14,6 +14,7 @@ with open(CONFIG_FILE, 'r') as file:
     data = json.load(file)
     backup_jobs = data['jobs']
 
+# Iterates through json file and builds command
 def build_rsync_command(job: dict) -> list:
     # Set source and destination if name matches job parameters
     src = dst = None
@@ -40,35 +41,30 @@ def build_rsync_command(job: dict) -> list:
         return
 
     # Skip if source or destination is not ready
-    if not is_path_ready(src, source["type"], src_mp):
+    if not is_path_ready(src, source["filesystem"], src_mp):
         logger.warning(f"Source not ready: {src}")
         return
-    if not is_path_ready(dst, destination["type"], dst_mp):
+    if not is_path_ready(dst, destination["filesystem"], dst_mp):
         logger.warning(f"Destination not ready: {dst}")
         return
 
     # Begin building rsync command
-    cmd = ["rsync"] + job["flags"]
+    rsync_args = ["rsync"] + job["flags"]
     # Add exclusion list if marked as so
     if job["exclude_from"]:
-        cmd += ["--exclude-from", os.path.expanduser(job["exclude_from"])]
-    cmd += [src, dst]
-    return cmd
+        rsync_args += ["--exclude-from", os.path.expanduser(job["exclude_from"])]
+    rsync_args += [src, dst]
+    return rsync_args
 
-def build_readable_command(cmd: list) -> str:
-    result = ' '.join(str(word) for word in cmd)
-    hr_cmd = ''.join(result) + "\n"
-    return hr_cmd
-
-# Rsync function
-def run_rsync_job(cmd: list, job: dict) -> None:
+# Runs each rsync command
+def run_rsync_job(rsync_command: list, job: dict) -> None:
     # Logs upcoming rsync command
     print("Running rsync commands...")
-    logger.info(f"Running rsync: {' '.join(cmd)}")
+    logger.info(f"Running rsync: {' '.join(rsync_command)}")
     try:
         # Execute the rsync command, capturing output and raising on error
         result = subprocess.run(
-            cmd,
+            rsync_command,
             capture_output=True,
             text=True,
             check=True,
@@ -85,25 +81,25 @@ def run_rsync_job(cmd: list, job: dict) -> None:
 # Main for loop
 def main() -> None:
 
-    hr_list = ''
+    preview = ''
 
     for job in backup_jobs:
-        cmd = build_rsync_command(job)
-        if cmd is None:
+        preview_cmd = build_rsync_command(job)
+        if preview_cmd is None:
             logger.error(f"Could not run job {job['name']}!")
         else:
-            hr_cmd = ''.join(build_readable_command(cmd))
-            hr_list += hr_cmd
+            preview_cmd = ' '.join(str(word) for word in preview_cmd)
+            preview += preview_cmd + "\n"
 
-    result = prompt_user(hr_list)
+    user_confirmed = prompt_user(preview)
     
-    if result == True:
+    if user_confirmed == True:
         for job in backup_jobs:
-            cmd = build_rsync_command(job)
-            if cmd is None:
+            rsync_command = build_rsync_command(job)
+            if rsync_command is None:
                 logger.error(f"Could not run job {job['name']}!")
             else:
-                run_rsync_job(cmd, job)
+                run_rsync_job(rsync_command, job)
         time.sleep(3)
         print("Syncing complete!")
         sys.exit()
