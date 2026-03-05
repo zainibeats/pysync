@@ -85,21 +85,25 @@ def run_rsync_job(cmd: list, job: dict) -> None:
 # Main for loop
 def main() -> None:
 
-    cmd_list = []
     hr_list = ''
 
     for job in backup_jobs:
         cmd = build_rsync_command(job)
-        cmd_list.append(cmd)
-        
-        hr_cmd = ''.join(build_readable_command(cmd))
-        hr_list += hr_cmd
+        if cmd is None:
+            logger.error(f"Could not run job {job['name']}!")
+        else:
+            hr_cmd = ''.join(build_readable_command(cmd))
+            hr_list += hr_cmd
 
     result = prompt_user(hr_list)
     
     if result == True:
-        for cmd in cmd_list:
-            run_rsync_job(cmd, job)
+        for job in backup_jobs:
+            cmd = build_rsync_command(job)
+            if cmd is None:
+                logger.error(f"Could not run job {job['name']}!")
+            else:
+                run_rsync_job(cmd, job)
         time.sleep(3)
         print("Syncing complete!")
         sys.exit()
