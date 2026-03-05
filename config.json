@@ -1,8 +1,4 @@
 {
-    "settings": {
-        "mount_all_before_sync": false
-    },
-
     "sources": [
         {
             "name": "testnfs1",
