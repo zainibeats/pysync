@@ -55,13 +55,13 @@ def build_rsync_command(job: dict) -> list:
     cmd += [src, dst]
     return cmd
 
-def build_command_list(cmd: list) -> str:
-    result = ''.join(str(word) for word in cmd)
+def build_readable_command(cmd: list) -> str:
+    result = ' '.join(str(word) for word in cmd)
     hr_cmd = ''.join(result) + "\n"
     return hr_cmd
 
 # Rsync function
-def run_rsync_job(command: dict) -> None:
+def run_rsync_job(cmd: list, job: dict) -> None:
     # Logs upcoming rsync command
     print("Running rsync commands...")
     logger.info(f"Running rsync: {' '.join(cmd)}")
@@ -74,7 +74,7 @@ def run_rsync_job(command: dict) -> None:
             check=True,
         )
         # Log success and any stdout returned by rsync
-        logger.info(f"Job {job['name']} succeeded!. {result.stdout}")
+        logger.info(f"Job {job['name']} succeeded! {result.stdout}")
     except subprocess.CalledProcessError as exc:
         # Log failure details including exit code, stdout, and stderr
         logger.error(
@@ -85,14 +85,21 @@ def run_rsync_job(command: dict) -> None:
 # Main for loop
 def main() -> None:
 
+    cmd_list = []
+    hr_list = ''
+
     for job in backup_jobs:
         cmd = build_rsync_command(job)
-        hr_cmd = ''.join(build_command_list(cmd)) + "\n"
+        cmd_list.append(cmd)
+        
+        hr_cmd = ''.join(build_readable_command(cmd))
+        hr_list += hr_cmd
 
-    result = prompt_user(hr_cmd)
+    result = prompt_user(hr_list)
     
     if result == True:
-        run_rsync_job(cmd)
+        for cmd in cmd_list:
+            run_rsync_job(cmd, job)
         time.sleep(3)
         print("Syncing complete!")
         sys.exit()
