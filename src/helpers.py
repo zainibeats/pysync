@@ -6,7 +6,7 @@ from logger import logger
 def is_path_ready(path: str, filesystem: str, mount_point=None) -> bool:
     path = os.path.expanduser(path)
     if filesystem == "local":
-        return bool (os.listdir(path))
+        return True
     elif filesystem == "external":
         return bool (os.path.isdir(path))
     elif filesystem == "nfs":
