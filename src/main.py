@@ -48,6 +48,12 @@ def build_rsync_command(job: dict) -> list:
         logger.warning(f"Destination not ready: {dst}")
         return
 
+    # Skip job if '--delete' flag is to be ran on an empty source
+    if "--delete" in job["flags"] and not os.listdir(src):
+        logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
+        return
+
+
     # Begin building rsync command
     rsync_args = ["rsync"] + job["flags"]
     # Add exclusion list if marked as so

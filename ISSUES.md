@@ -69,3 +69,23 @@
 - **File:** `src/main.py:96`
 - **Problem:** Pythonic style is `if user_confirmed:`. Minor.
 - **Status:** [ ] Not started
+
+
+---
+
+# Important Context
+
+The reason we specify the mountpoint in the config.json is so we can address issues related to doing an rsync command on a subdirectory of an nfs share -- we can check the ACTUAL mountpoint rather than check the subdirectory (if NFS share is mounted, it should return that true and false if not).
+                                                                      
+### Mount Point Behaviors                                             
+| Path | Type | When Unmounted | Check Method |                       
+|------|------|----------------|--------------|                       
+| `/media/cheyenne/4TBEvo` | `external` | Directory does not exist | `os.path.isdir()` |                                                   
+| `/media/cheyenne/Backup` | `external` | Directory does not exist | `os.path.isdir()` |                                                   
+| `/home/cheyenne/remote_mount/ubuntu_mount` | `nfs` | Directory exists but empty | `os.path.ismount()` on declared mount point |      
+| `/home/cheyenne/Dropbox` | `local` | Always locally available | No check needed |                                                        
+
+### Path Type Definitions
+- **`external`** — External drive. Directory does not exist when unmounted. Check with `os.path.isdir()`.                              
+- **`nfs`** — Network mount. Directory always exists even when unmounted. Requires a declared `mount_point` field in config. Check with `os.path.ismount()` on that mount point.                         
+- **`local`** — Always locally available (e.g. Dropbox). No mount check needed, skip directly to rsync. 
