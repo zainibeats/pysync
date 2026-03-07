@@ -104,7 +104,7 @@ def main() -> None:
 
     user_confirmed = prompt_user(preview)
     
-    if user_confirmed == True:
+    if user_confirmed:
         for job in backup_jobs:
             rsync_command = build_rsync_command(job)
             if rsync_command is None:
