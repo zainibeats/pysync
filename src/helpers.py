@@ -4,7 +4,7 @@ import sys
 from logger import logger
 
 def is_path_ready(path: str, filesystem: str, mount_point=None) -> bool:
-    path = os.path.expanduser(path)
+    path = expand_path(path)
     if filesystem == "local":
         return True
     elif filesystem == "external":
@@ -12,13 +12,12 @@ def is_path_ready(path: str, filesystem: str, mount_point=None) -> bool:
     elif filesystem == "nfs":
         try:
             # Checks if path is mount point
-            return bool (os.path.ismount(os.path.expanduser(mount_point)))
+            return bool (os.path.ismount(expand_path(mount_point)))
         except (PermissionError, TypeError):
             return False
     else:
         logger.error(f"Unknown 'filesystem' value in the config.json!")
         return False
-
 
 def prompt_user(preview_cmd: str) -> bool:
     attempts = 0
@@ -35,3 +34,15 @@ def prompt_user(preview_cmd: str) -> bool:
     else:
         print("Multiple unknown inputs detected. Quitting PySync...")
         return False
+
+# Expands path and corrects path if ran as sudo
+def expand_path(path: str) -> str:
+    if os.environ.get("SUDO_USER"):
+        sudo_user = os.environ.get("SUDO_USER")
+        sudo_user_home_dir = "~" + sudo_user
+        sudo_user_path = path.replace("~", sudo_user_home_dir)
+        full_path = os.path.expanduser(sudo_user_path)
+        return full_path
+    else:
+        full_path = os.path.expanduser(path)
+        return full_path

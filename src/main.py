@@ -5,7 +5,7 @@ import json
 import time
 
 # Helper functions
-from helpers import is_path_ready, prompt_user
+from helpers import is_path_ready, prompt_user, expand_path
 from logger import logger
 
 # Backup rsync job list
@@ -15,22 +15,27 @@ with open(CONFIG_FILE, 'r') as file:
     backup_jobs = data['jobs']
 
 # Iterates through json file and builds command
-def build_rsync_command(job: dict) -> list:
+def build_rsync_command(job: dict) -> list | None:
     # Set source and destination if name matches job parameters
     src = dst = None
     source = destination = None
+    src_mp = dst_mp = None
+
     for s in data["sources"]:
         if s["name"] == job["source"]:
-            src = os.path.expanduser(s["path"])
-            src_mp = s.get("mount_point")
+            src = expand_path(s["path"])
+            if s["mount_point"] is not None:
+                src_mp = expand_path(s["mount_point"])
             source = s
-            break
+            break 
+
     for d in data["destinations"]:
         if d["name"] == job["destination"]:
-            dst = os.path.expanduser(d["path"])
-            dst_mp = d.get("mount_point")
+            dst = expand_path(d["path"])
+            if d["mount_point"] is not None:
+                dst_mp = expand_path(d["mount_point"])
             destination = d
-            break
+            break 
 
     # Skip job if source or destination name not found in config
     if source is None:
@@ -58,7 +63,7 @@ def build_rsync_command(job: dict) -> list:
     rsync_args = ["rsync"] + job["flags"]
     # Add exclusion list if marked as so
     if job["exclude_from"]:
-        rsync_args += ["--exclude-from", os.path.expanduser(job["exclude_from"])]
+        rsync_args += ["--exclude-from", expand_path(job["exclude_from"])]
     rsync_args += [src, dst]
     return rsync_args
 
@@ -84,7 +89,7 @@ def run_rsync_job(rsync_command: list, job: dict) -> None:
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
 
-# Main for loop
+# Main loop
 def main() -> None:
 
     preview = ''
