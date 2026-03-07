@@ -37,28 +37,6 @@ def build_rsync_command(job: dict) -> list | None:
             dst_config = dest_entry
             break 
 
-    # Skip job if source or destination name not found in config
-    if src_config is None:
-        logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
-        return
-    if dst_config is None:
-        logger.error(f"Job '{job['name']}' skipped: destination '{job['destination']}' not found in config.")
-        return
-
-    # Skip if source or destination is not ready
-    if not is_path_ready(src_path, src_config["filesystem"], src_mp):
-        logger.warning(f"Source not ready: {src_path}")
-        return
-    if not is_path_ready(dst_path, dst_config["filesystem"], dst_mp):
-        logger.warning(f"Destination not ready: {dst_path}")
-        return
-
-    # Skip job if '--delete' flag is to be ran on an empty source
-    if "--delete" in job["flags"] and not os.listdir(src_path):
-        logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
-        return
-
-
     # Begin building rsync command
     rsync_args = ["rsync"] + job["flags"]
     # Add exclusion list if marked as so
@@ -66,6 +44,17 @@ def build_rsync_command(job: dict) -> list | None:
         rsync_args += ["--exclude-from", expand_path(job["exclude_from"])]
     rsync_args += [src_path, dst_path]
     return rsync_args
+
+def validate_rsync_command(job, src_path, dst_path, src_mp, dst_mp, rsync_command) -> bool | None:
+    if not is_path_ready(src_path, src_config["filesystem"], src_mp):
+        logger.warning(f"Source not ready: {src_path}")
+        return False
+    if not is_path_ready(dst_path, dst_config["filesystem"], dst_mp):
+        logger.warning(f"Destination not ready: {dst_path}")
+        return False
+    if "--delete" in job["flags"] and not os.listdir(src_path):
+        logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
+        return False
 
 # Runs each rsync command
 def run_rsync_job(rsync_command: list, job: dict) -> None:
@@ -91,33 +80,40 @@ def run_rsync_job(rsync_command: list, job: dict) -> None:
 
 # Main loop
 def main() -> None:
-
-    preview_text = ''
+    proposed_commands = ''
+    valid_jobs = []    
+    src_path = dst_path = None
+    src_mp = dst_mp = None
+    src_config = dst_config = None
 
     for job in BACKUP_JOBS:
-        rsync_command = build_rsync_command(job)
+        rsync_command = build_rsync_command(job) # should return *_path, *_mp? or rsync_args maybe?
         if rsync_command is None:
             logger.error(f"Could not run job {job['name']}!")
+        elif src_config is None:
+            logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
+        elif dst_config is None:
+            logger.error(f"Job '{job['name']}' skipped: destination '{job['destination']}' not found in config.")
         else:
-            rsync_command = ' '.join(str(arg) for arg in rsync_command)
-            preview_text += rsync_command + "\n"
-
-    user_confirmed = confirm_with_user(preview_text)
-    
-    if user_confirmed:
-        for job in BACKUP_JOBS:
-            rsync_command = build_rsync_command(job)
-            if rsync_command is None:
-                logger.error(f"Could not run job {job['name']}!")
+            is_command_valid = validate_rsync_command(rsync_command)
+            if is_command_valid:
+                valid_jobs.append(job)
+                rsync_command = ' '.join(str(arg) for arg in rsync_command)
+                proposed_commands += rsync_command + "\n"
+                user_confirmed = confirm_with_user(proposed_commands)
+                if user_confirmed:
+                    for confirmed_jobs in valid_jobs:
+                        is_confirmed_job_valid = validate_rsync_command(confirmed_jobs)            
+                        if is_confirmed_job_valid:
+                            run_rsync_job(confirmed_jobs, job)
+                    time.sleep(3)
+                    print("Syncing complete!")
+                    sys.exit()
+                else:
+                    print("Quitting PySync...")
+                    sys.exit()
             else:
-                run_rsync_job(rsync_command, job)
-        time.sleep(3)
-        print("Syncing complete!")
-        sys.exit()
-    else:
-        print("Quitting PySync...")
-        sys.exit()
-
+                logger.warning(f"Source not ready: {src_path}")
 
 if __name__ == "__main__":
     main()
