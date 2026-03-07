@@ -1,56 +1,48 @@
 {
     "sources": [
         {
-            "name": "testnfs1",
-            "path": "~/remote_mount/testnfs1/",
-            "filesystem": "nfs",
-            "mount_point": "~/remote_mount/testnfs1"
+            "name": "john-music",
+            "path": "/home/john/Music/",
+            "filesystem": "local",
+            "mount_point": null
         },
-
         {
-            "name": "testnfs3",
-            "path": "~/remote_mount/testnfs3/",
-            "filesystem": "nfs",
-            "mount_point": "~/remote_mount/testnfs3"
-        } 
-
+            "name": "john-pictures",
+            "path": "~/Pictures",
+            "filesystem": "local",
+            "mount_point": null
+        }
     ],
 
     "destinations": [
         {
-            "name": "test-dest-1",
-            "path": "~/Documents/test-dir/dest-1",
-            "filesystem": "local",
+            "name": "external-ssd",
+            "path": "/media/john/external-ssd/backup",
+            "filesystem": "external",
             "mount_point": null
         },
         {
-            "name": "test-dest-2",
-            "path": "~/Documents/test-dir/dest-2",
-            "filesystem": "local",
-            "mount_point": null
-        },
-        {
-            "name": "testnfs2",
-            "path": "~/remote_mount/testnfs2/",
+            "name": "truenas-backup",
+            "path": "~/remote-mount/truenas/backup",
             "filesystem": "nfs",
-            "mount_point": "~/remote_mount/testnfs2"
+            "mount_point": "~/remote-mount/truenas"
         }
     ],
 
     "jobs": [
         {
-            "name": "Test backup",
-            "source": "testnfs1",
-            "destination": "testnfs2",
+            "name": "Music to external SSD",
+            "source": "john-music",
+            "destination": "external-ssd",
             "exclude_from": null,
             "flags": ["-av", "--delete"]
         },
         {
-            "name": "Test backup 2",
-            "source": "testnfs3",
-            "destination": "test-dest-2",
+            "name": "Pictures to TrueNAS",
+            "source": "john-pictures",
+            "destination": "truenas-backup",
             "exclude_from": null,
             "flags": ["-av", "--delete"]
-        }        
+        }
     ]
 }
