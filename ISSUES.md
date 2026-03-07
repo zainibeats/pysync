@@ -50,11 +50,6 @@
 - **Problem:** Configures the root logger. If any imported library also calls `basicConfig`, only the first call wins. A named logger with explicit handlers would be more robust.
 - **Status:** [ ] Not started
 
-### 4. `if user_confirmed == True` style
-- **File:** `src/main.py:96`
-- **Problem:** Pythonic style is `if user_confirmed:`. Minor.
-- **Status:** [ ] Not started
-
 
 ---
 
