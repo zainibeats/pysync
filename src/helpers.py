@@ -19,7 +19,7 @@ def is_path_ready(path: str, filesystem: str, mount_point=None) -> bool:
         logger.error(f"Unknown 'filesystem' value in the config.json!")
         return False
 
-def prompt_user(preview_cmd: str) -> bool:
+def confirm_with_user(preview_cmd: str) -> bool:
     attempts = 0
     while attempts < 4:
         user_input = input(f"You are about to run:\n{preview_cmd}\n\ny or n?: ").strip().lower()
@@ -39,8 +39,8 @@ def prompt_user(preview_cmd: str) -> bool:
 def expand_path(path: str) -> str:
     if os.environ.get("SUDO_USER"):
         sudo_user = os.environ.get("SUDO_USER")
-        sudo_user_home_dir = "~" + sudo_user
-        sudo_user_path = path.replace("~", sudo_user_home_dir)
+        sudo_user_home_prefix = "~" + sudo_user
+        sudo_user_path = path.replace("~", sudo_user_home_prefix)
         full_path = os.path.expanduser(sudo_user_path)
         return full_path
     else:
