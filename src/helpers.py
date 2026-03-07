@@ -47,13 +47,4 @@ def expand_path(path: str) -> str:
         full_path = os.path.expanduser(path)
         return full_path
 
-def validate_rsync_command(job, src_path, dst_path, src_mp, dst_mp, rsync_command) -> bool | None:
-    if not is_path_ready(src_path, src_config["filesystem"], src_mp):
-        logger.warning(f"Source not ready: {src_path}")
-        return False
-    if not is_path_ready(dst_path, dst_config["filesystem"], dst_mp):
-        logger.warning(f"Destination not ready: {dst_path}")
-        return False
-    if "--delete" in job["flags"] and not os.listdir(src_path):
-        logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
-        return False
+def resolve_job_paths() 

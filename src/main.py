@@ -45,16 +45,18 @@ def build_rsync_command(job: dict) -> list | None:
     rsync_args += [src_path, dst_path]
     return rsync_args
 
-def validate_rsync_command(job, src_path, dst_path, src_mp, dst_mp, rsync_command) -> bool | None:
+def validate_rsync_command(job, src_path, dst_path, src_mp, dst_mp, src_config, dst_config) -> bool | None:
     if not is_path_ready(src_path, src_config["filesystem"], src_mp):
         logger.warning(f"Source not ready: {src_path}")
         return False
-    if not is_path_ready(dst_path, dst_config["filesystem"], dst_mp):
+    elif not is_path_ready(dst_path, dst_config["filesystem"], dst_mp):
         logger.warning(f"Destination not ready: {dst_path}")
         return False
-    if "--delete" in job["flags"] and not os.listdir(src_path):
+    elif "--delete" in job["flags"] and not os.listdir(src_path):
         logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
         return False
+    else:
+        return True
 
 # Runs each rsync command
 def run_rsync_job(rsync_command: list, job: dict) -> None:
@@ -80,14 +82,16 @@ def run_rsync_job(rsync_command: list, job: dict) -> None:
 
 # Main loop
 def main() -> None:
+
     proposed_commands = ''
-    valid_jobs = []    
+    valid_jobs = []
     src_path = dst_path = None
     src_mp = dst_mp = None
     src_config = dst_config = None
 
+    # Loops through jobs, builds commands, validates, and creates list of valid jobs
     for job in BACKUP_JOBS:
-        rsync_command = build_rsync_command(job) # should return *_path, *_mp? or rsync_args maybe?
+        rsync_command = build_rsync_command(job)
         if rsync_command is None:
             logger.error(f"Could not run job {job['name']}!")
         elif src_config is None:
@@ -97,23 +101,29 @@ def main() -> None:
         else:
             is_command_valid = validate_rsync_command(rsync_command)
             if is_command_valid:
-                valid_jobs.append(job)
-                rsync_command = ' '.join(str(arg) for arg in rsync_command)
-                proposed_commands += rsync_command + "\n"
-                user_confirmed = confirm_with_user(proposed_commands)
-                if user_confirmed:
-                    for confirmed_jobs in valid_jobs:
-                        is_confirmed_job_valid = validate_rsync_command(confirmed_jobs)            
-                        if is_confirmed_job_valid:
-                            run_rsync_job(confirmed_jobs, job)
-                    time.sleep(3)
-                    print("Syncing complete!")
-                    sys.exit()
-                else:
-                    print("Quitting PySync...")
-                    sys.exit()
+                valid_jobs.append((job, rsync_command))
             else:
                 logger.warning(f"Source not ready: {src_path}")
+
+    # Loops through validated jobs, converts into strings
+    for job, rsync_command in valid_jobs:
+        rsync_command = ' '.join(str(arg) for arg in rsync_command)
+        proposed_commands += rsync_command + "\n"
+
+    user_confirmed = confirm_with_user(proposed_commands)
+
+    # Loop through jobs, re-vaidate, and run 
+    if user_confirmed:
+        for job in valid_jobs:
+            is_command_valid = validate_rsync_command(job)            
+            if is_command_valid:
+                run_rsync_job(job, rsync_command)
+        time.sleep(3)
+        print("Syncing complete!")
+        sys.exit()
+        else:
+            print("Quitting PySync...")
+            sys.exit()
 
 if __name__ == "__main__":
     main()
