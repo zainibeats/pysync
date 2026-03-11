@@ -5,7 +5,7 @@ import json
 import time
 
 # Helper functions
-from helpers import is_path_ready, confirm_with_user, expand_path
+from helpers import is_path_ready, confirm_with_user, expand_path, resolve_job_paths
 from logger import logger
 
 # Backup rsync job list
@@ -15,51 +15,29 @@ with open(CONFIG_FILE, 'r') as file:
     BACKUP_JOBS = config['jobs']
 
 # Iterates through json file and builds command
-def build_rsync_command(job: dict) -> list | None:
-    # Set source and destination if name matches job parameters
-    src_path = dst_path = None
-    src_mp = dst_mp = None
-    src_config = dst_config = None
-
-    for source_entry in config["sources"]:
-        if source_entry["name"] == job["source"]:
-            src_path = expand_path(source_entry["path"])
-            if source_entry["mount_point"] is not None:
-                src_mp = expand_path(source_entry["mount_point"])
-            src_config = source_entry
-            break 
-
-    for dest_entry in config["destinations"]:
-        if dest_entry["name"] == job["destination"]:
-            dst_path = expand_path(dest_entry["path"])
-            if dest_entry["mount_point"] is not None:
-                dst_mp = expand_path(dest_entry["mount_point"])
-            dst_config = dest_entry
-            break 
-
-    # Begin building rsync command
-    rsync_args = ["rsync"] + job["flags"]
+def build_rsync_command(job: dict, resolved_paths: dict) -> list | None:
+    rsync_args = ["rsync"] + job['flags']
     # Add exclusion list if marked as so
-    if job["exclude_from"]:
-        rsync_args += ["--exclude-from", expand_path(job["exclude_from"])]
-    rsync_args += [src_path, dst_path]
+    if job['exclude_from']:
+        rsync_args += ["--exclude-from", expand_path(job['exclude_from'])]
+    rsync_args += [resolved_paths['src_path'], resolved_paths['dst_path']]
     return rsync_args
 
-def validate_rsync_command(job, src_path, dst_path, src_mp, dst_mp, src_config, dst_config) -> bool | None:
-    if not is_path_ready(src_path, src_config["filesystem"], src_mp):
-        logger.warning(f"Source not ready: {src_path}")
+def validate_rsync_command(job: dict, resolved_paths: dict) -> bool | None:
+    if not is_path_ready(resolved_paths['src_path'], resolved_paths['src_config']['filesystem'], resolved_paths['src_mp']):
+        logger.warning(f"Source not ready: {resolved_paths['src_path']}")
         return False
-    elif not is_path_ready(dst_path, dst_config["filesystem"], dst_mp):
-        logger.warning(f"Destination not ready: {dst_path}")
+    elif not is_path_ready(resolved_paths['dst_path'], resolved_paths['dst_config']['filesystem'], resolved_paths['dst_mp']):
+        logger.warning(f"Destination not ready: {resolved_paths['dst_path']}")
         return False
-    elif "--delete" in job["flags"] and not os.listdir(src_path):
+    elif "--delete" in job['flags'] and not os.listdir(resolved_paths['src_path']):
         logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
         return False
     else:
         return True
 
 # Runs each rsync command
-def run_rsync_job(rsync_command: list, job: dict) -> None:
+def run_rsync_job(job: dict, rsync_command: list) -> None:
     # Logs upcoming rsync command
     print("Running rsync commands...")
     logger.info(f"Running rsync: {' '.join(rsync_command)}")
@@ -85,28 +63,26 @@ def main() -> None:
 
     proposed_commands = ''
     valid_jobs = []
-    src_path = dst_path = None
-    src_mp = dst_mp = None
-    src_config = dst_config = None
 
     # Loops through jobs, builds commands, validates, and creates list of valid jobs
     for job in BACKUP_JOBS:
-        rsync_command = build_rsync_command(job)
-        if rsync_command is None:
-            logger.error(f"Could not run job {job['name']}!")
-        elif src_config is None:
+        resolved_paths = resolve_job_paths(job, config)
+        rsync_command = build_rsync_command(job, resolved_paths)
+        if resolved_paths['src_config'] is None:
             logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
-        elif dst_config is None:
+        elif resolved_paths['dst_config'] is None:
             logger.error(f"Job '{job['name']}' skipped: destination '{job['destination']}' not found in config.")
+        elif rsync_command is None:
+            logger.error(f"Could not run job {job['name']}!")
         else:
-            is_command_valid = validate_rsync_command(rsync_command)
+            is_command_valid = validate_rsync_command(job, resolved_paths)
             if is_command_valid:
-                valid_jobs.append((job, rsync_command))
+                valid_jobs.append((job, rsync_command, resolved_paths))
             else:
-                logger.warning(f"Source not ready: {src_path}")
+                logger.warning(f"Source not ready: {resolved_paths['src_path']}")
 
     # Loops through validated jobs, converts into strings
-    for job, rsync_command in valid_jobs:
+    for job, rsync_command, resolved_paths in valid_jobs:
         rsync_command = ' '.join(str(arg) for arg in rsync_command)
         proposed_commands += rsync_command + "\n"
 
@@ -114,16 +90,18 @@ def main() -> None:
 
     # Loop through jobs, re-vaidate, and run 
     if user_confirmed:
-        for job in valid_jobs:
-            is_command_valid = validate_rsync_command(job)            
+        for job, rsync_command, resolved_paths in valid_jobs:
+            is_command_valid = validate_rsync_command(job, resolved_paths)            
             if is_command_valid:
                 run_rsync_job(job, rsync_command)
+            else:
+                logger.warning(f"Source not ready: {resolved_paths['src_path']}")
         time.sleep(3)
         print("Syncing complete!")
         sys.exit()
-        else:
-            print("Quitting PySync...")
-            sys.exit()
+    else:
+        print("Quitting PySync...")
+        sys.exit()
 
 if __name__ == "__main__":
     main()
