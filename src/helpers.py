@@ -47,26 +47,36 @@ def expand_path(path: str) -> str:
         full_path = os.path.expanduser(path)
         return full_path
 
-def resolve_job_paths(job: dict) ->  list:
-    # Set source and destination if name matches job parameters
+
+def resolve_job_paths(job: dict, config: dict) ->  dict:
+    
+    # Initialize variable
     src_path = dst_path = None
     src_mp = dst_mp = None
     src_config = dst_config = None
 
-    for source_entry in config["sources"]:
-        if source_entry["name"] == job["source"]:
-            src_path = expand_path(source_entry["path"])
-            if source_entry["mount_point"] is not None:
-                src_mp = expand_path(source_entry["mount_point"])
+    # Set source and destination if "name" matches "job" parameters from config file
+    for source_entry in config['sources']:
+        if source_entry['name'] == job['source']:
+            src_path = expand_path(source_entry['path'])
+            if source_entry['mount_point'] is not None:
+                src_mp = expand_path(source_entry['mount_point'])
             src_config = source_entry
             break 
 
     for dest_entry in config["destinations"]:
-        if dest_entry["name"] == job["destination"]:
-            dst_path = expand_path(dest_entry["path"])
-            if dest_entry["mount_point"] is not None:
-                dst_mp = expand_path(dest_entry["mount_point"])
+        if dest_entry['name'] == job['destination']:
+            dst_path = expand_path(dest_entry['path'])
+            if dest_entry['mount_point'] is not None:
+                dst_mp = expand_path(dest_entry['mount_point'])
             dst_config = dest_entry
             break 
 
-    return src_path, dst_path, src_mp, dst_mp, src_config, dst_config
+    return {
+        "src_path": src_path, 
+        "dst_path": dst_path, 
+        "src_mp": src_mp, 
+        "dst_mp": dst_mp, 
+        "src_config": src_config, 
+        "dst_config": dst_config
+        }
