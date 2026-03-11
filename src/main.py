@@ -23,6 +23,7 @@ def build_rsync_command(job: dict, resolved_paths: dict) -> list | None:
     rsync_args += [resolved_paths['src_path'], resolved_paths['dst_path']]
     return rsync_args
 
+
 def validate_rsync_command(job: dict, resolved_paths: dict) -> bool | None:
     if not is_path_ready(resolved_paths['src_path'], resolved_paths['src_config']['filesystem'], resolved_paths['src_mp']):
         logger.warning(f"Source not ready: {resolved_paths['src_path']}")
@@ -30,6 +31,7 @@ def validate_rsync_command(job: dict, resolved_paths: dict) -> bool | None:
     elif not is_path_ready(resolved_paths['dst_path'], resolved_paths['dst_config']['filesystem'], resolved_paths['dst_mp']):
         logger.warning(f"Destination not ready: {resolved_paths['dst_path']}")
         return False
+    # Checks if '--delete' flag is to be ran on an empty source 
     elif "--delete" in job['flags'] and not os.listdir(resolved_paths['src_path']):
         logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
         return False
@@ -39,8 +41,8 @@ def validate_rsync_command(job: dict, resolved_paths: dict) -> bool | None:
 # Runs each rsync command
 def run_rsync_job(job: dict, rsync_command: list) -> None:
     # Logs upcoming rsync command
-    print("Running rsync commands...")
-    logger.info(f"Running rsync: {' '.join(rsync_command)}")
+    print(f"Running job {job['name']}...")
+    logger.info(f"Running command: {' '.join(rsync_command)}")
     try:
         # Execute the rsync command, capturing output and raising on error
         result = subprocess.run(
@@ -49,6 +51,7 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
             text=True,
             check=True,
         )
+        print(f"Job {job['name']} succeeded!")
         # Log success and any stdout returned by rsync
         logger.info(f"Job {job['name']} succeeded! {result.stdout}")
     except subprocess.CalledProcessError as exc:
@@ -64,10 +67,11 @@ def main() -> None:
     proposed_commands = ''
     valid_jobs = []
 
-    # Loops through jobs, builds commands, validates, and creates list of valid jobs
+    # Loops through jobs, get necessary paths for each one, builds command, validates, and creates list of valid jobs
     for job in BACKUP_JOBS:
         resolved_paths = resolve_job_paths(job, config)
         rsync_command = build_rsync_command(job, resolved_paths)
+        # Error handling
         if resolved_paths['src_config'] is None:
             logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
         elif resolved_paths['dst_config'] is None:
@@ -75,6 +79,7 @@ def main() -> None:
         elif rsync_command is None:
             logger.error(f"Could not run job {job['name']}!")
         else:
+            
             is_command_valid = validate_rsync_command(job, resolved_paths)
             if is_command_valid:
                 valid_jobs.append((job, rsync_command, resolved_paths))
