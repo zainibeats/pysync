@@ -15,7 +15,7 @@ with open(CONFIG_FILE, 'r') as file:
     BACKUP_JOBS = config['jobs']
 
 # Iterates through json file and builds command
-def build_rsync_command(job: dict, resolved_paths: dict) -> list | None:
+def build_rsync_command(job: dict, resolved_paths: dict) -> list:
     rsync_args = ["rsync"] + job['flags']
     # Add exclusion list if marked as so
     if job['exclude_from']:
@@ -24,7 +24,7 @@ def build_rsync_command(job: dict, resolved_paths: dict) -> list | None:
     return rsync_args
 
 
-def validate_rsync_command(job: dict, resolved_paths: dict) -> bool | None:
+def validate_rsync_command(job: dict, resolved_paths: dict) -> bool:
     if not is_path_ready(resolved_paths['src_path'], resolved_paths['src_config']['filesystem'], resolved_paths['src_mp']):
         logger.warning(f"Source not ready: {resolved_paths['src_path']}")
         return False
@@ -70,43 +70,42 @@ def main() -> None:
     # Loops through jobs, get necessary paths for each one, builds command, validates, and creates list of valid jobs
     for job in BACKUP_JOBS:
         resolved_paths = resolve_job_paths(job, config)
-        rsync_command = build_rsync_command(job, resolved_paths)
-        # Error handling
         if resolved_paths['src_config'] is None:
             logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
         elif resolved_paths['dst_config'] is None:
             logger.error(f"Job '{job['name']}' skipped: destination '{job['destination']}' not found in config.")
-        elif rsync_command is None:
-            logger.error(f"Could not run job {job['name']}!")
         else:
-            
+            rsync_command = build_rsync_command(job, resolved_paths)
             is_command_valid = validate_rsync_command(job, resolved_paths)
             if is_command_valid:
                 valid_jobs.append((job, rsync_command, resolved_paths))
-            else:
-                logger.warning(f"Source not ready: {resolved_paths['src_path']}")
 
     # Loops through validated jobs, converts into strings
     for job, rsync_command, resolved_paths in valid_jobs:
         rsync_command = ' '.join(str(arg) for arg in rsync_command)
         proposed_commands += rsync_command + "\n"
 
-    user_confirmed = confirm_with_user(proposed_commands)
-
-    # Loop through jobs, re-vaidate, and run 
-    if user_confirmed:
-        for job, rsync_command, resolved_paths in valid_jobs:
-            is_command_valid = validate_rsync_command(job, resolved_paths)            
-            if is_command_valid:
-                run_rsync_job(job, rsync_command)
-            else:
-                logger.warning(f"Source not ready: {resolved_paths['src_path']}")
-        time.sleep(3)
-        print("Syncing complete!")
-        sys.exit()
-    else:
+    if not valid_jobs:
+        logger.error("No jobs to run!")
         print("Quitting PySync...")
         sys.exit()
+    else:
+        user_confirmed = confirm_with_user(proposed_commands)
+
+        # Loop through jobs, re-vaidate, and run 
+        if user_confirmed:
+            for job, rsync_command, resolved_paths in valid_jobs:
+                is_command_valid = validate_rsync_command(job, resolved_paths)            
+                if is_command_valid:
+                    run_rsync_job(job, rsync_command)
+                else:
+                    continue
+            time.sleep(3)
+            print("Syncing complete!")
+            sys.exit()
+        else:
+            print("Quitting PySync...")
+            sys.exit()
 
 if __name__ == "__main__":
     main()
