@@ -34,7 +34,7 @@ python src/main.py
 
 ## Configuration
 
-Everything is set up in the [config.json](./config.json) file. There are three sections:
+Everything is set up in the [config.json](./config.example.json) file. There are three sections:
 
 ### Sources
 
