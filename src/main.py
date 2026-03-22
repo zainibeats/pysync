@@ -32,9 +32,17 @@ def validate_rsync_command(job: dict, resolved_paths: dict) -> bool:
         logger.warning(f"Destination not ready: {resolved_paths['dst_path']}")
         return False
     # Checks if '--delete' flag is to be ran on an empty source 
-    elif "--delete" in job['flags'] and not os.listdir(resolved_paths['src_path']):
-        logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory")
-        return False
+    elif "--delete" in job['flags']:
+        try:
+            list_src_dir = os.listdir(resolved_paths['src_path'])
+            if not list_src_dir:
+                logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory: {resolved_paths['src_path']}")
+                return False
+            else:
+                return True
+        except (FileNotFoundError, PermissionError) as e:
+            logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on a source directory that cannot be read. Check permissions and verify {resolved_paths['src_path']} exists")
+            return False
     else:
         return True
 
