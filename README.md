@@ -18,7 +18,8 @@ pysync/
 │   ├── main.py        # Starts the script and runs the jobs
 │   ├── helpers.py     # Checks if paths are ready, prompts user, expands paths
 │   └── logger.py      # Sets up logging
-├── config.json        # Where you define your backup jobs
+├── config.example.json  # Template — copy to config.json and edit
+├── config.json          # Your local config
 ├── logs/
 │   └── pysync.log     # Log file output
 └── .gitignore
@@ -29,6 +30,8 @@ pysync/
 ```bash
 git clone https://github.com/zainibeats/pysync
 cd pysync
+cp config.example.json config.json
+# Edit config.json with your own paths and backup jobs
 python src/main.py
 ```
 

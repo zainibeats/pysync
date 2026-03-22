@@ -1,6 +1,9 @@
 # Environment Variables
 .env
 
+# Config File
+config.json
+
 # Virtual Environment
 .venv
 
