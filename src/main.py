@@ -77,17 +77,17 @@ def load_config() -> tuple | None :
 # Main loop
 def main() -> None:
 
-    config_data = load_config()
-    if config_data == None:
+    current_config = load_config()
+    if current_config is None:
         print("Quitting PySync...")
-        sys.exit()
-
+        sys.exit(1)
+    config, backup_jobs = current_config
 
     proposed_commands = ''
     valid_jobs = []
 
     # Loops through jobs, get necessary paths for each one, builds command, validates, and creates list of valid jobs
-    for job in BACKUP_JOBS:
+    for job in backup_jobs:
         resolved_paths = resolve_job_paths(job, config)
         if resolved_paths['src_config'] is None:
             logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
@@ -119,7 +119,6 @@ def main() -> None:
                     run_rsync_job(job, rsync_command)
                 else:
                     continue
-            time.sleep(3)
             print("Syncing complete!")
             sys.exit()
         else:
