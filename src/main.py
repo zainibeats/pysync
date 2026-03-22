@@ -8,12 +8,6 @@ import time
 from helpers import is_path_ready, confirm_with_user, expand_path, resolve_job_paths
 from logger import logger
 
-# Backup rsync job list
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
-with open(CONFIG_FILE, 'r') as file:
-    config = json.load(file)
-    BACKUP_JOBS = config['jobs']
-
 # Iterates through json file and builds command
 def build_rsync_command(job: dict, resolved_paths: dict) -> list:
     rsync_args = ["rsync"] + job['flags']
@@ -69,8 +63,25 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
 
+def load_config() -> tuple | None :
+    config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
+    try:
+        with open(config_file, 'r') as file:
+            config = json.load(file)
+            backup_jobs = config['jobs']
+            return config, backup_jobs
+    except FileNotFoundError as e:
+        logger.error("Config file not found. Make sure a config.json exists in the pysync directory.")
+        return None
+
 # Main loop
 def main() -> None:
+
+    config_data = load_config()
+    if config_data == None:
+        print("Quitting PySync...")
+        sys.exit()
+
 
     proposed_commands = ''
     valid_jobs = []
