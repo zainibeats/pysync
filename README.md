@@ -149,7 +149,7 @@ The `filesystem` field tells the script how to check if a path is available befo
 
 | Type | When to use | How it checks |
 |------|-------------|---------------|
-| `local` | Paths that are always available (e.g. `~/Dropbox`) | No check — always considered ready |
+| `local` | Paths on the local filesystem (e.g. `~/Dropbox`) | `os.path.isdir()` — verifies the directory exists |
 | `external` | External drives that disappear when unplugged | `os.path.isdir()` — the directory won't exist when unmounted |
 | `nfs` | Network mounts where the directory still exists when unmounted | `os.path.ismount()` on the declared `mount_point` |
 
