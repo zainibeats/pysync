@@ -5,7 +5,7 @@ import json
 import time
 
 # Helper functions
-from helpers import is_path_ready, confirm_with_user, expand_path, resolve_job_paths
+from helpers import is_path_ready, confirm_with_user, expand_path, validate_config, resolve_job_paths
 from logger import logger
 
 # Iterates through json file and builds command
@@ -16,7 +16,6 @@ def build_rsync_command(job: dict, resolved_paths: dict) -> list:
         rsync_args += ["--exclude-from", expand_path(job['exclude_from'])]
     rsync_args += [resolved_paths['src_path'], resolved_paths['dst_path']]
     return rsync_args
-
 
 def validate_rsync_command(job: dict, resolved_paths: dict) -> bool:
     if not is_path_ready(resolved_paths['src_path'], resolved_paths['src_config']['filesystem'], resolved_paths['src_mp']):
@@ -63,7 +62,7 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
 
-def load_config() -> tuple | None :
+def load_config() -> tuple | None : 
     config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
     try:
         with open(config_file, 'r') as file:
@@ -81,7 +80,14 @@ def main() -> None:
     if current_config is None:
         print("Quitting PySync...")
         sys.exit(1)
-    config, backup_jobs = current_config
+    # current_config[0] returns the 'config' dictionary from load_config() function
+    config = current_config[0]
+    validated_config = validate_config(config)
+    if not validated_config:
+        print("Quitting PySync...")
+        sys.exit(1)
+    else:
+        backup_jobs = current_config[1]
 
     proposed_commands = ''
     valid_jobs = []

@@ -47,6 +47,34 @@ def expand_path(path: str) -> str:
         full_path = os.path.expanduser(path)
         return full_path
 
+def validate_config(config: dict) -> bool:
+    # CHecks for 'sources' key in config.json
+    sources = config.get('sources')
+    if sources is None:
+        logger.error(f"Missing 'sources' key in config.json!")
+        return False
+    else:
+        for source in sources:
+            name = source.get('name')
+            if name is None:
+                logger.error(f"Missing 'name' key for source {source} in config.json!")       
+                return False
+            path = source.get('path')
+            if path is None:
+                logger.error(f"Missing 'path' key for source {source} in config.json!")
+                return False
+            filesystem = source.get('filesystem')
+            if filesystem is None:
+                logger.error(f"Missing 'filesystem' key for source {source} in config.json!")
+                return False
+            if 'mount_point' not in source:
+                logger.error(f"Missing 'mount_point' key for source {source} in config.json!")
+                return False
+
+    # Checks for 'dictionary' key in config.json
+
+    # Checks for 'jobs' key in config.json
+
 
 def resolve_job_paths(job: dict, config: dict) ->  dict:
     
