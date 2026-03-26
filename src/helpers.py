@@ -32,7 +32,7 @@ def confirm_with_user(preview_cmd: str) -> bool:
             attempts += 1            
             continue
     else:
-        print("Multiple unknown inputs detected. Quitting PySync...")
+        logger.warning("Multiple unknown inputs detected. Quitting PySync...")
         return False
 
 # Expands path and corrects path if ran as sudo

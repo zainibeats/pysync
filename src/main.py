@@ -20,8 +20,8 @@ def build_rsync_command(job: dict, resolved_paths: dict) -> list:
 # Runs each rsync command
 def run_rsync_job(job: dict, rsync_command: list) -> None:
     # Logs upcoming rsync command
-    print(f"Running job {job['name']}...")
-    logger.info(f"Running command: {' '.join(rsync_command)}")
+    logger.info(f"Running job {job['name']}...")
+    logger.debug(f"Running command: {' '.join(rsync_command)}")
     try:
         # Execute the rsync command, capturing output and raising on error
         result = subprocess.run(
@@ -30,7 +30,6 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
             text=True,
             check=True,
         )
-        print(f"Job {job['name']} succeeded!")
         # Log success and any stdout returned by rsync
         logger.info(f"Job {job['name']} succeeded! {result.stdout}")
     except subprocess.CalledProcessError as exc:
@@ -56,13 +55,13 @@ def main() -> None:
 
     current_config = load_config()
     if current_config is None:
-        print("Quitting PySync...")
+        logger.info("Quitting PySync...")
         sys.exit(1)
     # current_config[0] returns the 'config' dictionary from load_config() function
     config = current_config[0]
     validated_config = validate_config(config)
     if not validated_config:
-        print("Quitting PySync...")
+        logger.info("Quitting PySync...")
         sys.exit(1)
     else:
         backup_jobs = current_config[1]
@@ -90,7 +89,7 @@ def main() -> None:
 
     if not valid_jobs:
         logger.error("No jobs to run!")
-        print("Quitting PySync...")
+        logger.info("Quitting PySync...")
         sys.exit(1)
     else:
         user_confirmed = confirm_with_user(proposed_commands)
@@ -103,10 +102,10 @@ def main() -> None:
                     run_rsync_job(job, rsync_command)
                 else:
                     continue
-            print("Syncing complete!")
+            logger.info("Syncing complete!")
             sys.exit(0)
         else:
-            print("Quitting PySync...")
+            logger.info("Quitting PySync...")
             sys.exit(0)
 
 if __name__ == "__main__":
