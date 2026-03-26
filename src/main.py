@@ -38,13 +38,12 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
 
-def load_config() -> tuple | None : 
+def load_config() -> dict | None : 
     config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json")
     try:
         with open(config_file, 'r') as file:
             config = json.load(file)
-            backup_jobs = config['jobs']
-            return config, backup_jobs
+            return config
     except FileNotFoundError as e:
         logger.error("Config file not found. Make sure a config.json exists in the pysync directory.")
         return None
@@ -52,25 +51,28 @@ def load_config() -> tuple | None :
 # Main loop
 def main() -> None:
 
+    # Load config and quit program if none found
     current_config = load_config()
     if current_config is None:
         logger.info("Quitting PySync...")
         sys.exit(1)
-    # current_config[0] returns the 'config' dictionary from load_config() function
-    config = current_config[0]
-    validated_config = validate_config(config)
+    
+    # Validate config and quit program if not validated
+    validated_config = validate_config(current_config)
     if not validated_config:
         logger.info("Quitting PySync...")
         sys.exit(1)
+    # If config is successfully validated, assign jobs listed in config.json to backup_jobs
     else:
-        backup_jobs = current_config[1]
+        backup_jobs = current_config['jobs']
 
+    # Initialize values
     proposed_commands = ''
     valid_jobs = []
 
     # Loops through jobs, get necessary paths for each one, builds command, validates, and creates list of valid jobs
     for job in backup_jobs:
-        resolved_paths = resolve_job_paths(job, config)
+        resolved_paths = resolve_job_paths(job, current_config)
         if resolved_paths['src_config'] is None:
             logger.error(f"Job '{job['name']}' skipped: source '{job['source']}' not found in config.")
         elif resolved_paths['dst_config'] is None:

@@ -46,7 +46,7 @@ def expand_path(path: str) -> str:
         full_path = os.path.expanduser(path)
         return full_path
 
-def resolve_job_paths(job: dict, config: dict) ->  dict:
+def resolve_job_paths(job: dict, current_config: dict) ->  dict:
     
     # Initialize variable
     src_path = dst_path = None
@@ -54,7 +54,7 @@ def resolve_job_paths(job: dict, config: dict) ->  dict:
     src_config = dst_config = None
 
     # Set source and destination if "name" matches "job" parameters from config file
-    for source_entry in config['sources']:
+    for source_entry in current_config['sources']:
         if source_entry['name'] == job['source']:
             src_path = expand_path(source_entry['path'])
             if source_entry['mount_point'] is not None:
@@ -62,7 +62,7 @@ def resolve_job_paths(job: dict, config: dict) ->  dict:
             src_config = source_entry
             break 
 
-    for dest_entry in config["destinations"]:
+    for dest_entry in current_config["destinations"]:
         if dest_entry['name'] == job['destination']:
             dst_path = expand_path(dest_entry['path'])
             if dest_entry['mount_point'] is not None:
