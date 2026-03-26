@@ -4,9 +4,9 @@ import subprocess
 import json
 import time
 
-# Helper functions
-from helpers import is_path_ready, confirm_with_user, expand_path, validate_config, resolve_job_paths
+from helpers import is_path_ready, confirm_with_user, expand_path, resolve_job_paths
 from logger import logger
+from validators import validate_config, validate_rsync_command
 
 # Iterates through json file and builds command
 def build_rsync_command(job: dict, resolved_paths: dict) -> list:
@@ -16,28 +16,6 @@ def build_rsync_command(job: dict, resolved_paths: dict) -> list:
         rsync_args += ["--exclude-from", expand_path(job['exclude_from'])]
     rsync_args += [resolved_paths['src_path'], resolved_paths['dst_path']]
     return rsync_args
-
-def validate_rsync_command(job: dict, resolved_paths: dict) -> bool:
-    if not is_path_ready(resolved_paths['src_path'], resolved_paths['src_config']['filesystem'], resolved_paths['src_mp']):
-        logger.warning(f"Source not ready: {resolved_paths['src_path']}")
-        return False
-    elif not is_path_ready(resolved_paths['dst_path'], resolved_paths['dst_config']['filesystem'], resolved_paths['dst_mp']):
-        logger.warning(f"Destination not ready: {resolved_paths['dst_path']}")
-        return False
-    # Checks if '--delete' flag is to be ran on an empty source 
-    elif "--delete" in job['flags']:
-        try:
-            list_src_dir = os.listdir(resolved_paths['src_path'])
-            if not list_src_dir:
-                logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on an empty source directory: {resolved_paths['src_path']}")
-                return False
-            else:
-                return True
-        except (FileNotFoundError, PermissionError) as e:
-            logger.error(f"Ignoring Job '{job['name']}' because the '--delete' flag is being ran on a source directory that cannot be read. Check permissions and verify {resolved_paths['src_path']} exists")
-            return False
-    else:
-        return True
 
 # Runs each rsync command
 def run_rsync_job(job: dict, rsync_command: list) -> None:
