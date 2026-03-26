@@ -91,7 +91,7 @@ def main() -> None:
     if not valid_jobs:
         logger.error("No jobs to run!")
         print("Quitting PySync...")
-        sys.exit()
+        sys.exit(1)
     else:
         user_confirmed = confirm_with_user(proposed_commands)
 
@@ -104,10 +104,10 @@ def main() -> None:
                 else:
                     continue
             print("Syncing complete!")
-            sys.exit()
+            sys.exit(0)
         else:
             print("Quitting PySync...")
-            sys.exit()
+            sys.exit(0)
 
 if __name__ == "__main__":
     main()
