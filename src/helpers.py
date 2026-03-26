@@ -1,5 +1,4 @@
 import os
-import sys
 
 from logger import logger
 
@@ -28,7 +27,7 @@ def confirm_with_user(preview_cmd: str) -> bool:
         elif user_input == "n":
             return False
         else:
-            print("Enter 'y' to proceed or 'n' to exit")
+            logger.info("Enter 'y' to proceed or 'n' to exit")
             attempts += 1            
             continue
     else:

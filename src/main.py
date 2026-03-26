@@ -2,9 +2,8 @@ import os
 import sys
 import subprocess
 import json
-import time
 
-from helpers import is_path_ready, confirm_with_user, expand_path, resolve_job_paths
+from helpers import confirm_with_user, expand_path, resolve_job_paths
 from logger import logger
 from validators import validate_config, validate_rsync_command
 
@@ -100,8 +99,6 @@ def main() -> None:
                 is_command_valid = validate_rsync_command(job, resolved_paths)            
                 if is_command_valid:
                     run_rsync_job(job, rsync_command)
-                else:
-                    continue
             logger.info("Syncing complete!")
             sys.exit(0)
         else:
