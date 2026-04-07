@@ -4,6 +4,16 @@ from helpers import expand_path, is_path_ready
 from logger import logger
 
 
+# Iterates through json file and builds command
+def build_rsync_command(job: dict, resolved_paths: dict) -> list:
+    rsync_args = ["rsync"] + job["flags"]
+    # Add exclusion list if marked as so
+    if job["exclude_from"]:
+        rsync_args += ["--exclude-from", expand_path(job["exclude_from"])]
+    rsync_args += [resolved_paths["src_path"], resolved_paths["dst_path"]]
+    return rsync_args
+
+
 def validate_config(config: dict) -> bool:
     # CHecks for 'sources' key in config.json
 

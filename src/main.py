@@ -1,62 +1,10 @@
-import json
-import os
-import subprocess
 import sys
 
-from helpers import confirm_with_user, expand_path, resolve_job_paths
+from config_loader import load_config
+from executor import run_rsync_job
+from helpers import confirm_with_user, resolve_job_paths
 from logger import logger
-from validators import validate_config, validate_rsync_command
-
-
-# Iterates through json file and builds command
-def build_rsync_command(job: dict, resolved_paths: dict) -> list:
-    rsync_args = ["rsync"] + job["flags"]
-    # Add exclusion list if marked as so
-    if job["exclude_from"]:
-        rsync_args += ["--exclude-from", expand_path(job["exclude_from"])]
-    rsync_args += [resolved_paths["src_path"], resolved_paths["dst_path"]]
-    return rsync_args
-
-
-# Runs each rsync command
-def run_rsync_job(job: dict, rsync_command: list) -> None:
-    # Logs upcoming rsync command
-    logger.info(f"Running job {job['name']}...")
-    logger.debug(f"Running command: {' '.join(rsync_command)}")
-    try:
-        # Execute the rsync command, capturing output and raising on error
-        result = subprocess.run(
-            rsync_command,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        # Log success and any stdout returned by rsync
-        logger.info(f"Job {job['name']} succeeded! {result.stdout}")
-    except subprocess.CalledProcessError as exc:
-        # Log failure details including exit code, stdout, and stderr
-        logger.error(
-            f"Job {job['name']} failed (exit {exc.returncode}):\n"
-            f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
-        )
-
-
-def load_config() -> dict | None:
-    config_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "config.json"
-    )
-    try:
-        with open(config_file, "r") as file:
-            config = json.load(file)
-            return config
-    except FileNotFoundError:
-        logger.error(
-            "Config file not found. Make sure a config.json exists in the pysync directory."
-        )
-        return None
-    except json.JSONDecodeError as e:
-        logger.error(f"Config.json is malformed!\nError message:\n{e}")
-        return None
+from validators import build_rsync_command, validate_config, validate_rsync_command
 
 
 # Main loop

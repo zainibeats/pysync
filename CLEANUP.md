@@ -2,16 +2,10 @@
 
 ## 1. Logic & Behavior
 
-- [ ] **1. `load_config()` doesn't catch `json.JSONDecodeError` (`main.py:44-48`)**
-  Only `FileNotFoundError` is caught. Malformed JSON (trailing comma, missing quote, etc.) will produce a raw traceback instead of a user-friendly error message.
-
-- [ ] **2. `validate_config` doesn't check `filesystem` values (`validators.py`)**
-  A typo like `"filesystem": "loccal"` passes validation silently and only fails later in `is_path_ready` with a generic "Unknown 'filesystem' value" error. Validation should reject unknown filesystem types early with a clear message.
-
-- [ ] **3. `expand_path` replaces all `~` characters, not just the leading one (`helpers.py:43`)**
+- [ ] **1. `expand_path` replaces all `~` characters, not just the leading one (`helpers.py:43`)**
   `path.replace("~", sudo_user_home_prefix)` replaces every `~` in the string. A path like `/data/~archive/files` would get mangled. Should only replace a leading `~`.
 
-- [ ] **4. `config.json` is tracked in git despite being in `.gitignore`**
+- [ ] **2. `config.json` is tracked in git despite being in `.gitignore`**
   `.gitignore` only prevents *untracked* files from being staged. Since `config.json` was committed before the gitignore rule was added, it's still tracked. Run `git rm --cached config.json` to untrack it without deleting the local file.
 
 ---
