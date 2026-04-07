@@ -15,13 +15,16 @@ A Python script that runs rsync backup commands automatically. You set up your b
 ```
 pysync/
 ├── src/
-│   ├── main.py        # Starts the script and runs the jobs
-│   ├── helpers.py     # Checks if paths are ready, prompts user, expands paths
-│   └── logger.py      # Sets up logging
-├── config.example.json  # Template — copy to config.json and edit
-├── config.json          # Your local config
+│   ├── main.py           # Entry point — orchestrates config loading, validation, and job execution
+│   ├── config_loader.py  # Loads and parses config.json
+│   ├── validators.py     # Validates config structure and builds/validates rsync commands
+│   ├── executor.py       # Runs rsync jobs via subprocess
+│   ├── helpers.py        # Path resolution, path readiness checks, user confirmation, path expansion
+│   └── logger.py         # Sets up logging
+├── config.example.json   # Template — copy to config.json and edit
+├── config.json           # Your local config
 ├── logs/
-│   └── pysync.log     # Log file output
+│   └── pysync.log        # Log file output
 └── .gitignore
 ```
 
