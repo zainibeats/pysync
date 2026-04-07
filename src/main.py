@@ -49,10 +49,13 @@ def load_config() -> dict | None:
         with open(config_file, "r") as file:
             config = json.load(file)
             return config
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         logger.error(
             "Config file not found. Make sure a config.json exists in the pysync directory."
         )
+        return None
+    except json.JSONDecodeError as e:
+        logger.error(f"Config.json is malformed!\nError message:\n{e}")
         return None
 
 
