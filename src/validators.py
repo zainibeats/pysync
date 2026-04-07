@@ -6,6 +6,9 @@ from logger import logger
 
 def validate_config(config: dict) -> bool:
     # CHecks for 'sources' key in config.json
+
+    valid_filesystems = ["local", "external", "nfs"]
+
     sources = config.get("sources")
     if sources is None:
         logger.error("Missing 'sources' key in config.json!")
@@ -26,6 +29,13 @@ def validate_config(config: dict) -> bool:
                     f"Missing 'filesystem' key for source {name} in config.json!"
                 )
                 return False
+            else:
+                # Throws up error if filesystem is NOT labeled either local, external or nfs
+                if filesystem not in valid_filesystems:
+                    logger.error(
+                        f"Incorrect filesystem type in source {name}. (Either local, external, or nfs)"
+                    )
+                    return False
             if "mount_point" not in source:
                 logger.error(
                     f"Missing 'mount_point' key for source {name} in config.json!"
@@ -65,6 +75,13 @@ def validate_config(config: dict) -> bool:
                     f"Missing 'filesystem' key for destination {name} in config.json!"
                 )
                 return False
+            else:
+                # Throws up error if filesystem is NOT labeled either local, external or nfs
+                if filesystem not in valid_filesystems:
+                    logger.error(
+                        f"Incorrect filesystem type in destination {name}. (Either local, external, or nfs)"
+                    )
+                    return False
             if "mount_point" not in destination:
                 logger.error(
                     f"Missing 'mount_point' key for destination {name} in config.json!"
