@@ -39,17 +39,17 @@ def confirm_with_user(preview_cmd: str) -> bool:
         return False
 
 
-# Expands path and corrects path if ran as sudo
+# Expands path dynamically by checking if ran as sudo
 def expand_path(path: str) -> str:
-    if os.environ.get("SUDO_USER"):
+    if os.environ.get("SUDO_USER") and path.startswith("~"):
         sudo_user = os.environ.get("SUDO_USER")
         sudo_user_home_prefix = "~" + sudo_user
-        sudo_user_path = path.replace("~", sudo_user_home_prefix)
-        full_path = os.path.expanduser(sudo_user_path)
+        # Replaces "~" prefix with sudo user $HOME (e.g. /home/john instead of /root). Expand $HOME afterwards
+        full_path = os.path.expanduser(path.replace("~", sudo_user_home_prefix, 1))
         return full_path
     else:
-        full_path = os.path.expanduser(path)
-        return full_path
+        # Not ran as sudo -> expand path as normal
+        return os.path.expanduser(path)
 
 
 def resolve_job_paths(job: dict, current_config: dict) -> dict:
