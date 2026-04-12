@@ -1,16 +1,6 @@
 # Cleanup Checklist
 
-## 1. Logic & Behavior
-
-- [ ] **1. `expand_path` replaces all `~` characters, not just the leading one (`helpers.py:43`)**
-  `path.replace("~", sudo_user_home_prefix)` replaces every `~` in the string. A path like `/data/~archive/files` would get mangled. Should only replace a leading `~`.
-
-- [ ] **2. `config.json` is tracked in git despite being in `.gitignore`**
-  `.gitignore` only prevents *untracked* files from being staged. Since `config.json` was committed before the gitignore rule was added, it's still tracked. Run `git rm --cached config.json` to untrack it without deleting the local file.
-
----
-
-## 2. Minor Issues
+## 1. Minor Issues
 
 - [ ] **1. `local` and `external` are identical in code (`helpers.py:8-11`)**
   Both branches do `os.path.isdir()`. If they're supposed to behave differently (per the README), the code should reflect that. If they're not different, question whether both types are needed.
@@ -20,7 +10,7 @@
 
 ---
 
-## 3. Simplification Opportunities
+## 2. Simplification Opportunities
 
 - [ ] **1. `load_config` return value is awkward (`main.py:42-51`, `56-67`)**
   It returns a tuple that gets unpacked by index (`current_config[0]`, `current_config[1]`). Since `backup_jobs` shouldn't be extracted before validation anyway (see Critical #3), `load_config` could just return the config dict (or `None` on failure), and `backup_jobs` can be pulled from `config['jobs']` after validation passes.
