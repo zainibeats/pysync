@@ -27,27 +27,31 @@ These issues could cause data loss or corruption in production. They should be a
 - [ ] **5. No protection against dangerous rsync flags (`validators.py:130-132`)**
   The `flags` field is passed directly to rsync with no filtering. A user could accidentally include `--remove-source-files`, which deletes source files after transfer. For a backup tool handling critical data, there should be a blocklist of flags that are incompatible with the tool's purpose, or at least a warning when dangerous flags are detected.
 
-- [ ] **6. No validation that source and destination are different paths (`main.py:33-47`)**
-  If a user configures the same path as both source and destination, rsync's behavior is undefined and could corrupt data. The tool never checks for this.
+- [ ] **6. No validation that source and destination are different or non-overlapping paths (`main.py:33-47`, `helpers.py:54-85`)**
+  The tool never checks whether the resolved source and destination point to the same directory, or whether one path is inside the other. Same-path jobs are at best useless and at worst dangerous. Nested paths are more serious: for example, backing up `/home/user` into `/home/user/backup` can cause recursive backup growth, and using `--delete` with overlapping paths can delete or reshape data the user did not intend to touch.
 
-- [ ] **7. No partial-transfer protection (`executor.py:13-18`)**
-  The tool does not pass `--partial-dir` (or `--temp-dir`) to rsync. If rsync is interrupted mid-transfer (Ctrl+C, network drop, power loss), a partially-written file at the destination overwrites the previous complete copy. For critical data, rsync should write partial files to a staging area (e.g., `--partial-dir=.rsync-partial`) so an interrupted transfer never corrupts an existing good file.
+- [ ] **7. Dangerous overwrite-related rsync flags are not blocked (`validators.py:130-132`, `executor.py:13-18`)**
+  The earlier concern that rsync always overwrites a good destination file with a partial file on interruption is not accurate for default rsync behavior: by default, rsync writes to a temporary file and renames it after a successful transfer. The real risk is that the tool lets users pass flags that change that safety behavior, such as `--inplace`, `--append`, `--append-verify`, or `--partial` without a safe `--partial-dir`. For a backup tool, these should be blocked or require an explicit high-risk confirmation. Adding a safe default like `--partial-dir=.rsync-partial` is still worth considering, but the critical issue is unrestricted unsafe flags.
 
-- [ ] **8. Stale NFS mount passes the readiness check (`helpers.py:11-14`)**
-  `os.path.ismount()` returns `True` for a stale NFS mount (the kernel still considers it mounted). A stale mount will cause rsync to hang indefinitely or error out. The check should also verify the mount is *responsive* — e.g., attempt an `os.listdir()` with a timeout, or at least check `os.path.exists()` on the actual target path (not just the mount point).
+- [ ] **8. Mounted filesystems are not checked deeply enough (`helpers.py:6-15`, `validators.py:151-165`)**
+  For NFS, `is_path_ready()` only checks whether the configured `mount_point` is a mount. It does not verify that the actual source/destination path exists, is a directory, is readable/writable as needed, or that the mount is responsive. A stale NFS mount may still look mounted to the kernel and then hang or fail during rsync.
+
+  For `filesystem: "external"`, the check only uses `os.path.isdir(path)`. If the mount point or backup directory exists on the local filesystem while the external drive is disconnected, the job can run against the wrong storage location. With `--delete`, this can mirror an unexpectedly empty or wrong source/destination state.
+
+  The readiness check should verify both the mount point and the actual target path, and should perform a lightweight read/write responsiveness check with a timeout.
 
 - [ ] **9. `subprocess.run` has no timeout (`executor.py:13-18`)**
   If rsync hangs (stale NFS, unresponsive remote), the process blocks forever with no way to recover. `subprocess.run` accepts a `timeout` parameter — a configurable timeout (or a generous default) would prevent the tool from hanging indefinitely. This is especially dangerous combined with issue #8 (stale NFS).
 
-## 3. Important — Robustness
-
-These won't directly corrupt data but affect reliability and safe operation in production.
-
 - [ ] **10. No single-instance enforcement**
   If the user (or a cron job) accidentally launches PySync twice simultaneously targeting the same destination, both instances will run rsync concurrently against the same paths. With `--delete`, this can cause unpredictable results. A lock file (e.g., `flock` or a PID file) would prevent concurrent execution.
 
-- [ ] **11. `external` filesystem check may give false positives (`helpers.py:9-10`)**
-  For `filesystem: "external"`, the readiness check uses `os.path.isdir()`, same as `local`. This works on most Linux setups because the mount directory disappears when the drive is unplugged. However, if a user manually creates the mount point directory while the drive is disconnected, `isdir()` returns `True` and the job runs against an empty directory. For external drives, `os.path.ismount()` on the parent mount point (like NFS uses) would be more reliable. At minimum, this limitation should be documented.
+- [ ] **11. Duplicate source/destination names are not rejected (`validators.py:22-108`, `helpers.py:62-76`)**
+  Jobs refer to sources and destinations by name, but validation does not enforce unique names. `resolve_job_paths()` silently uses the first matching entry. A duplicate name can make a job run against the wrong source or destination, which is especially dangerous when `--delete` is enabled.
+
+## 3. Important — Robustness
+
+These won't directly corrupt data but affect reliability and safe operation in production.
 
 - [ ] **12. `KeyboardInterrupt` during rsync leaves no warning about partial state (`main.py:75-79`)**
   If the user hits Ctrl+C while rsync is running, the handler logs "Ctrl+C pressed" and exits, but doesn't warn that the destination may be in a partially-synced state. Since this is a backup tool for critical data, the exit message should tell the user that the last job may be incomplete and should be re-run.
