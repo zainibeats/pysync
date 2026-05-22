@@ -135,15 +135,28 @@ def validate_config(config: dict) -> bool:
                     f"Missing 'exclude_from' key for job {name} in config.json!"
                 )
                 return False
-            else:
-                # Exclude from path exists but NOT null
-                if job["exclude_from"]:
-                    exclude_from_file_path = expand_path(job["exclude_from"])
-                    if not os.path.isfile(exclude_from_file_path):
-                        logger.error(
-                            f"Cannot find or read 'exclude_from' file for job {name} in config.json!"
-                        )
-                        return False
+            # Ensure 'flags' key in config.json is of type list
+            flags = job.get("flags")
+            if not isinstance(flags, list):
+                logger.error(
+                    f"""The value for 'flags' in config.json must always be a list such as: ["-av", "--delete"]\nReview your flags:\n{flags}"""
+                )
+                return False
+            # Ensure 'flags' key in config.json only contains strings
+            for flag in flags:
+                if not isinstance(flag, str):
+                    logger.error(
+                        f"All values for 'flags' key in config.json must always be a string!\nReview your flags:\n{flags}"
+                    )
+                    return False
+            # Exclude from path exists but NOT null
+            if job["exclude_from"]:
+                exclude_from_file_path = expand_path(job["exclude_from"])
+                if not os.path.isfile(exclude_from_file_path):
+                    logger.error(
+                        f"Cannot find or read 'exclude_from' file for job {name} in config.json!"
+                    )
+                    return False
 
     return True
 
