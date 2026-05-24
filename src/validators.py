@@ -6,7 +6,7 @@ from logger import logger
 
 # Iterates through json file and builds command
 def build_rsync_command(job: dict, resolved_paths: dict) -> list:
-    rsync_args = ["rsync"] + job["flags"]
+    rsync_args = ["rsync", "--archive", "--verbose"] + job["extra_flags"]
     # Add exclusion list if marked as so
     if job["exclude_from"]:
         rsync_args += ["--exclude-from", expand_path(job["exclude_from"])]
@@ -15,9 +15,21 @@ def build_rsync_command(job: dict, resolved_paths: dict) -> list:
 
 
 def validate_config(config: dict) -> bool:
-    # CHecks for 'sources' key in config.json
-
+    # Checks for 'sources' key in config.json
     valid_filesystems = ["local", "external", "nfs"]
+    blocked_extra_flags = {
+        "-a",
+        "-v",
+        "-av",
+        "-va",
+        "--archive",
+        "--verbose",
+        "--remove-source-files",
+        "--inplace",
+        "--append",
+        "--append-verify",
+        "--partial",
+    }
 
     sources = config.get("sources")
     if sources is None:
@@ -127,26 +139,32 @@ def validate_config(config: dict) -> bool:
                     f"Missing 'destination' key for job {name} in config.json!"
                 )
                 return False
-            if "flags" not in job:
-                logger.error(f"Missing 'flags' key for job {name} in config.json!")
+            if "extra_flags" not in job:
+                logger.error(f"Missing 'extra_flags' key for job {name} in config.json!")
                 return False
             if "exclude_from" not in job:
                 logger.error(
                     f"Missing 'exclude_from' key for job {name} in config.json!"
                 )
                 return False
-            # Ensure 'flags' key in config.json is of type list
-            flags = job.get("flags")
-            if not isinstance(flags, list):
+            # Ensure 'extra_flags' key in config.json is of type list
+            extra_flags = job.get("extra_flags")
+            if not isinstance(extra_flags, list):
                 logger.error(
-                    f"""The value for 'flags' in config.json must always be a list such as: ["-av", "--delete"]\nReview your flags:\n{flags}"""
+                    f"""The value for 'extra_flags' in config.json must always be a list such as: ["--delete"]\nReview your extra_flags:\n{extra_flags}"""
                 )
                 return False
-            # Ensure 'flags' key in config.json only contains strings
-            for flag in flags:
+            for flag in extra_flags:
+                # Ensure 'extra_flags' key in config.json only contains strings
                 if not isinstance(flag, str):
                     logger.error(
-                        f"All values for 'flags' key in config.json must always be a string!\nReview your flags:\n{flags}"
+                        f"All values for 'extra_flags' key in config.json must always be a string!\nReview your extra_flags:\n{extra_flags}"
+                    )
+                    return False
+                # Ensure 'extra_flags' key in config.json does not include any blocked flags
+                elif flag in blocked_extra_flags:
+                    logger.error(
+                        f"The following flag from your 'extra_flags' in config.json is not allowed: {flag}"
                     )
                     return False
             # Exclude from path exists but NOT null
@@ -177,7 +195,7 @@ def validate_rsync_command(job: dict, resolved_paths: dict) -> bool:
         logger.warning(f"Destination not ready: {resolved_paths['dst_path']}")
         return False
     # Checks if '--delete' flag is to be ran on an empty source
-    elif "--delete" in job["flags"]:
+    elif "--delete" in job["extra_flags"]:
         try:
             list_src_dir = os.listdir(resolved_paths["src_path"])
             if not list_src_dir:

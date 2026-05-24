@@ -128,14 +128,14 @@ Each job connects a source to a destination using their names:
         "source": "john-music",
         "destination": "external-ssd",
         "exclude_from": null,
-        "flags": ["-av", "--delete"]
+        "extra_flags": ["--delete"]
     },
     {
         "name": "Pictures to TrueNAS",
         "source": "john-pictures",
         "destination": "truenas-backup",
         "exclude_from": null,
-        "flags": ["-av", "--delete"]
+        "extra_flags": ["--delete"]
     }
 ]
 ```
@@ -144,7 +144,7 @@ Each job connects a source to a destination using their names:
 - **source**: The name of one of your sources
 - **destination**: The name of one of your destinations
 - **exclude_from**: Path to a file listing things to skip, or `null` if you don't need one
-- **flags**: The rsync flags you want to use (e.g. `"-av"`, `"--delete"`)
+- **extra_flags**: additional rsync flags to use after the script’s default archive and verbose flags (e.g. `"-lu"`, `"--delete"`)
 
 ### Filesystem Types
 
@@ -157,4 +157,3 @@ The `filesystem` field tells the script how to check if a path is available befo
 | `nfs` | Network mounts where the directory still exists when unmounted | `os.path.ismount()` on the declared `mount_point` |
 
 For `nfs` paths, the mount point in the config should point to the actual NFS mount point, not a subdirectory of it. This is because NFS mount directories still exist when the share is unmounted (they're just empty), so checking the subdirectory with `isdir()` would give a false positive.
-

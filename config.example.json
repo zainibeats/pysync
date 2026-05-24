@@ -35,14 +35,14 @@
             "source": "john-music",
             "destination": "external-ssd",
             "exclude_from": null,
-            "flags": ["-av", "--delete"]
+            "extra_flags": ["--delete"]
         },
         {
             "name": "Pictures to TrueNAS",
             "source": "john-pictures",
             "destination": "truenas-backup",
             "exclude_from": null,
-            "flags": ["-av", "--delete"]
+            "extra_flags": ["--delete"]
         }
     ]
 }
