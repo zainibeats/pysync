@@ -135,7 +135,7 @@ Each job connects a source to a destination using their names:
         "source": "john-pictures",
         "destination": "truenas-backup",
         "exclude_from": null,
-        "extra_flags": ["--delete"]
+        "extra_flags": []
     }
 ]
 ```
@@ -144,7 +144,7 @@ Each job connects a source to a destination using their names:
 - **source**: The name of one of your sources
 - **destination**: The name of one of your destinations
 - **exclude_from**: Path to a file listing things to skip, or `null` if you don't need one
-- **extra_flags**: additional rsync flags to use after the script’s default archive and verbose flags (e.g. `"-lu"`, `"--delete"`)
+- **extra_flags**: Additional rsync flags to use after the script’s default archive and verbose flags (e.g. `"-lu"`, `"--delete"`). This key is required and its value must be a list. Use an empty list (`[]`) when no extra flags are needed.
 
 ### Filesystem Types
 

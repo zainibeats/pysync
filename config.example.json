@@ -42,7 +42,7 @@
             "source": "john-pictures",
             "destination": "truenas-backup",
             "exclude_from": null,
-            "extra_flags": ["--delete"]
+            "extra_flags": []
         }
     ]
 }
