@@ -46,10 +46,7 @@ These issues could cause data loss or corruption in production. They should be a
 - [ ] **7. Dangerous path checks should use canonical paths, not raw strings (`helpers.py:41-85`)**
   Any future same-path or nested-path validation should compare normalized/canonical paths, not the raw config strings. Paths like `~/Pictures`, `/home/user/Pictures`, paths with trailing slashes, and symlinks can refer to the same location while looking different as strings. Use tools such as `os.path.abspath()`, `os.path.realpath()`, and `os.path.commonpath()` after expanding `~`.
 
-- [ ] **8. Replace the `extra_flags` blocklist with an allowlist (`validators.py:20-32`, `150-169`)**
-  The blocklist is bypassable: combined short flags like `-az`, `-avz`, or `-aP` are not caught even though `-a`/`-v` are blocked, and `-P` expands to the blocked `--partial` (plus `--progress`). It also misses dangerous flags such as `--delete-excluded`, `--force`, and `-e`/`--rsh` — the last of which lets a config file specify an arbitrary command for rsync to execute. **Decided:** switch to an allowlist of approved flags (e.g. `--delete`, `--dry-run`, `--compress`, `--exclude=...`) and reject everything else.
-
-- [ ] **9. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
+- [ ] **8. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
   rsync treats `src` and `src/` completely differently: `src` creates a `dst/src/` subdirectory while `src/` syncs the directory's contents into `dst`. Config paths pass through to the command unmodified. If a user adds or drops a trailing slash between runs of a `--delete` job, rsync restructures the destination and deletes the previous layout. Normalize source paths to one convention (and document it), or warn when the convention changes the meaning of an existing destination.
 
 ## 3. Important — Robustness

@@ -17,18 +17,14 @@ def build_rsync_command(job: dict, resolved_paths: dict) -> list:
 def validate_config(config: dict) -> bool:
     # Checks for 'sources' key in config.json
     valid_filesystems = ["local", "external", "nfs"]
-    blocked_extra_flags = {
-        "-a",
-        "-v",
-        "-av",
-        "-va",
-        "--archive",
-        "--verbose",
-        "--remove-source-files",
-        "--inplace",
-        "--append",
-        "--append-verify",
-        "--partial",
+    allowed_extra_flags = {
+        "--delete",
+        "--dry-run",
+        "--compress",
+        "--update",
+        "-u",
+        "-z",
+        "-n",
     }
 
     sources = config.get("sources")
@@ -161,8 +157,8 @@ def validate_config(config: dict) -> bool:
                         f"All values for 'extra_flags' key in config.json must always be a string!\nReview your extra_flags:\n{extra_flags}"
                     )
                     return False
-                # Ensure 'extra_flags' key in config.json does not include any blocked flags
-                elif flag in blocked_extra_flags:
+                # Validate 'extra_flags' key in config.json against the allowed extra flags
+                elif flag not in allowed_extra_flags:
                     logger.error(
                         f"The following flag from your 'extra_flags' in config.json is not allowed: {flag}"
                     )
