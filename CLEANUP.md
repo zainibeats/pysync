@@ -34,25 +34,22 @@ These issues could cause data loss or corruption in production. They should be a
 
   The readiness check should verify both the mount point and the actual target path, and should perform a lightweight read/write responsiveness check with a timeout.
 
-- [ ] **4. `subprocess.run` has no timeout (`executor.py:13-18`)**
-  If rsync hangs (stale NFS, unresponsive remote), the process blocks forever with no way to recover. `subprocess.run` accepts a `timeout` parameter — a configurable timeout (or a generous default) would prevent the tool from hanging indefinitely. This is especially dangerous combined with issue #3 (stale or unresponsive mounted filesystems).
-
-- [ ] **5. No single-instance enforcement** *(post-MVP — interactive-only for now)*
+- [ ] **4. No single-instance enforcement** *(post-MVP — interactive-only for now)*
   If the user accidentally launches PySync twice simultaneously targeting the same destination, both instances will run rsync concurrently against the same paths. With `--delete`, this can cause unpredictable results. A lock file (e.g., `flock` or a PID file) would prevent concurrent execution. Deferred since the MVP is interactive-only; required before any cron/unattended mode.
 
-- [ ] **6. Duplicate names are not rejected (`validators.py:34-119`, `helpers.py:62-76`)**
+- [ ] **5. Duplicate names are not rejected (`validators.py:34-119`, `helpers.py:62-76`)**
   Jobs refer to sources and destinations by name, but validation does not enforce unique names. `resolve_job_paths()` silently uses the first matching entry. A duplicate name can make a job run against the wrong source or destination, which is especially dangerous when `--delete` is enabled. Duplicate *job* names should also be rejected — they make logs ambiguous about which job failed.
 
-- [ ] **7. Rsync failures are logged but not propagated (`executor.py:21-26`, `main.py:63-68`)**
+- [ ] **6. Rsync failures are logged but not propagated (`executor.py:21-26`, `main.py:63-68`)**
   `run_rsync_job()` catches `subprocess.CalledProcessError` and logs the failure, but it does not return a success/failure value or re-raise the exception. `main.py` then continues and logs "Syncing complete!" before exiting with code 0. For a backup tool, this is a data-integrity risk because users can believe a backup succeeded when rsync actually failed. The same applies when a job is silently dropped by the re-validation at `main.py:64-65` — the run still ends with "Syncing complete!" and exit 0.
 
-- [ ] **8. Dangerous path checks should use canonical paths, not raw strings (`helpers.py:41-85`)**
+- [ ] **7. Dangerous path checks should use canonical paths, not raw strings (`helpers.py:41-85`)**
   Any future same-path or nested-path validation should compare normalized/canonical paths, not the raw config strings. Paths like `~/Pictures`, `/home/user/Pictures`, paths with trailing slashes, and symlinks can refer to the same location while looking different as strings. Use tools such as `os.path.abspath()`, `os.path.realpath()`, and `os.path.commonpath()` after expanding `~`.
 
-- [ ] **9. Replace the `extra_flags` blocklist with an allowlist (`validators.py:20-32`, `150-169`)**
+- [ ] **8. Replace the `extra_flags` blocklist with an allowlist (`validators.py:20-32`, `150-169`)**
   The blocklist is bypassable: combined short flags like `-az`, `-avz`, or `-aP` are not caught even though `-a`/`-v` are blocked, and `-P` expands to the blocked `--partial` (plus `--progress`). It also misses dangerous flags such as `--delete-excluded`, `--force`, and `-e`/`--rsh` — the last of which lets a config file specify an arbitrary command for rsync to execute. **Decided:** switch to an allowlist of approved flags (e.g. `--delete`, `--dry-run`, `--compress`, `--exclude=...`) and reject everything else.
 
-- [ ] **10. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
+- [ ] **9. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
   rsync treats `src` and `src/` completely differently: `src` creates a `dst/src/` subdirectory while `src/` syncs the directory's contents into `dst`. Config paths pass through to the command unmodified. If a user adds or drops a trailing slash between runs of a `--delete` job, rsync restructures the destination and deletes the previous layout. Normalize source paths to one convention (and document it), or warn when the convention changes the meaning of an existing destination.
 
 ## 3. Important — Robustness

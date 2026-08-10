@@ -15,6 +15,7 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
             capture_output=True,
             text=True,
             check=True,
+            timeout=3600,
         )
         # Log success and any stdout returned by rsync
         logger.info(f"Job {job['name']} succeeded! {result.stdout}")
@@ -22,5 +23,10 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
         # Log failure details including exit code, stdout, and stderr
         logger.error(
             f"Job {job['name']} failed (exit {exc.returncode}):\n"
+            f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
+        )
+    except subprocess.TimeoutExpired as exc:
+        logger.error(
+            f"Job {job['name']} timed out after {exc.timeout} seconds\n"
             f"stdout: {exc.stdout}\nstderr: {exc.stderr}"
         )
