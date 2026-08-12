@@ -2,7 +2,7 @@ import sys
 
 from config_loader import load_config
 from executor import run_rsync_job
-from helpers import confirm_with_user, resolve_job_paths
+from helpers import confirm_with_user, resolve_job_paths, build_preview, get_deletion_summary
 from logger import logger
 from validators import build_rsync_command, validate_config, validate_rsync_command
 
@@ -63,6 +63,10 @@ def main() -> None:
             for job, rsync_command, resolved_paths in valid_jobs:
                 is_command_valid = validate_rsync_command(job, resolved_paths)
                 if is_command_valid:
+                    if "--delete" in job["extra_flags"]:
+                        preview_command = build_preview(rsync_command)
+                        preview_output = run_rsync_job(job, preview_command)
+                        deletion_summary = get_deletion_summary(preview_output)
                     run_rsync_job(job, rsync_command)
             logger.info("Syncing complete!")
             sys.exit(0)

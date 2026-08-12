@@ -83,3 +83,12 @@ def resolve_job_paths(job: dict, current_config: dict) -> dict:
         "src_config": src_config,
         "dst_config": dst_config,
     }
+
+def build_preview(rsync_command: list) -> list:
+    preview_args = rsync_command[:-2] + ["--dry-run", "--itemize-changes"]
+    preview_command = preview_args + rsync_command[-2:]
+    return preview_command
+
+def get_deletion_summary(preview_output: str) -> list | None:
+    if "*deleting" in preview_output:
+        print

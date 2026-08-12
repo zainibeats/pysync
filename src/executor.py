@@ -4,7 +4,7 @@ from logger import logger
 
 
 # Runs each rsync command
-def run_rsync_job(job: dict, rsync_command: list) -> None:
+def run_rsync_job(job: dict, rsync_command: list) -> str | None:
     # Logs upcoming rsync command
     logger.info(f"Running job {job['name']}...")
     logger.debug(f"Running command: {' '.join(rsync_command)}")
@@ -19,6 +19,7 @@ def run_rsync_job(job: dict, rsync_command: list) -> None:
         )
         # Log success and any stdout returned by rsync
         logger.info(f"Job {job['name']} succeeded! {result.stdout}")
+        return result.stdout
     except subprocess.CalledProcessError as exc:
         # Log failure details including exit code, stdout, and stderr
         logger.error(
