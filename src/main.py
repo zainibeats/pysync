@@ -66,8 +66,17 @@ def main() -> None:
                     if "--delete" in job["extra_flags"]:
                         preview_command = build_preview(rsync_command)
                         preview_output = run_rsync_job(job, preview_command)
+                        if preview_output is None:
+                            continue
                         deletion_summary = get_deletion_summary(preview_output)
+                        if deletion_summary:
+                            formatted_deletion_summary = "\n".join(deletion_summary)
+                            print("These files will be removed:")
+                            user_confirmed_deletions = confirm_with_user(formatted_deletion_summary)
+                            if not user_confirmed_deletions:
+                                continue
                     run_rsync_job(job, rsync_command)
+
             logger.info("Syncing complete!")
             sys.exit(0)
         else:

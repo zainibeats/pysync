@@ -17,36 +17,29 @@
 
 These issues could cause data loss or corruption in production. They should be addressed before this tool is used on critical data.
 
-- [ ] **1. `--delete` empty-source guard has a TOCTOU gap and doesn't cover partial data loss (`validators.py:197-212`, `main.py:63-66`)**
-  The `--delete` safety check only catches a *completely* empty source directory at validation time. Two problems:
-  1. **Time-of-check to time-of-use (TOCTOU):** The source could become empty (or lose files) between the re-validation at `main.py:64` and the actual rsync execution at `main.py:66`. The window is small but real.
-  2. **Partial data loss is not caught:** If a source loses *most* of its files (e.g., an NFS mount goes stale and shows a subset, or a process clears part of the directory), the source isn't empty so the guard passes, and `--delete` mirrors the loss to the destination — destroying the only remaining copy.
-
-  **Decided:** run `rsync --dry-run` first for `--delete` jobs and present the deletion summary for confirmation before the real run. A file-count/size sanity check can supplement this later.
-
-- [ ] **2. No validation that source and destination are different or non-overlapping paths (`main.py:33-47`, `helpers.py:54-85`)**
+- [ ] **1. No validation that source and destination are different or non-overlapping paths (`main.py:33-47`, `helpers.py:54-85`)**
   The tool never checks whether the resolved source and destination point to the same directory, or whether one path is inside the other. Same-path jobs are at best useless and at worst dangerous. Nested paths are more serious: for example, backing up `/home/user` into `/home/user/backup` can cause recursive backup growth, and using `--delete` with overlapping paths can delete or reshape data the user did not intend to touch.
 
-- [ ] **3. Mounted filesystems are not checked deeply enough (`helpers.py:6-15`, `validators.py:182-196`)**
+- [ ] **2. Mounted filesystems are not checked deeply enough (`helpers.py:6-15`, `validators.py:182-196`)**
   For NFS, `is_path_ready()` only checks whether the configured `mount_point` is a mount. It does not verify that the actual source/destination path exists, is a directory, is readable/writable as needed, or that the mount is responsive. A stale NFS mount may still look mounted to the kernel and then hang or fail during rsync.
 
   For `filesystem: "external"`, the check only uses `os.path.isdir(path)`. If the mount point or backup directory exists on the local filesystem while the external drive is disconnected, the job can run against the wrong storage location. With `--delete`, this can mirror an unexpectedly empty or wrong source/destination state.
 
   The readiness check should verify both the mount point and the actual target path, and should perform a lightweight read/write responsiveness check with a timeout.
 
-- [ ] **4. No single-instance enforcement** *(post-MVP — interactive-only for now)*
+- [ ] **3. No single-instance enforcement** *(post-MVP — interactive-only for now)*
   If the user accidentally launches PySync twice simultaneously targeting the same destination, both instances will run rsync concurrently against the same paths. With `--delete`, this can cause unpredictable results. A lock file (e.g., `flock` or a PID file) would prevent concurrent execution. Deferred since the MVP is interactive-only; required before any cron/unattended mode.
 
-- [ ] **5. Duplicate names are not rejected (`validators.py:34-119`, `helpers.py:62-76`)**
+- [ ] **4. Duplicate names are not rejected (`validators.py:34-119`, `helpers.py:62-76`)**
   Jobs refer to sources and destinations by name, but validation does not enforce unique names. `resolve_job_paths()` silently uses the first matching entry. A duplicate name can make a job run against the wrong source or destination, which is especially dangerous when `--delete` is enabled. Duplicate *job* names should also be rejected — they make logs ambiguous about which job failed.
 
-- [ ] **6. Rsync failures are logged but not propagated (`executor.py:21-26`, `main.py:63-68`)**
+- [ ] **5. Rsync failures are logged but not propagated (`executor.py:21-26`, `main.py:63-68`)**
   `run_rsync_job()` catches `subprocess.CalledProcessError` and logs the failure, but it does not return a success/failure value or re-raise the exception. `main.py` then continues and logs "Syncing complete!" before exiting with code 0. For a backup tool, this is a data-integrity risk because users can believe a backup succeeded when rsync actually failed. The same applies when a job is silently dropped by the re-validation at `main.py:64-65` — the run still ends with "Syncing complete!" and exit 0.
 
-- [ ] **7. Dangerous path checks should use canonical paths, not raw strings (`helpers.py:41-85`)**
+- [ ] **6. Dangerous path checks should use canonical paths, not raw strings (`helpers.py:41-85`)**
   Any future same-path or nested-path validation should compare normalized/canonical paths, not the raw config strings. Paths like `~/Pictures`, `/home/user/Pictures`, paths with trailing slashes, and symlinks can refer to the same location while looking different as strings. Use tools such as `os.path.abspath()`, `os.path.realpath()`, and `os.path.commonpath()` after expanding `~`.
 
-- [ ] **8. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
+- [ ] **7. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
   rsync treats `src` and `src/` completely differently: `src` creates a `dst/src/` subdirectory while `src/` syncs the directory's contents into `dst`. Config paths pass through to the command unmodified. If a user adds or drops a trailing slash between runs of a `--delete` job, rsync restructures the destination and deletes the previous layout. Normalize source paths to one convention (and document it), or warn when the convention changes the meaning of an existing destination.
 
 ## 3. Important — Robustness

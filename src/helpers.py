@@ -89,6 +89,10 @@ def build_preview(rsync_command: list) -> list:
     preview_command = preview_args + rsync_command[-2:]
     return preview_command
 
-def get_deletion_summary(preview_output: str) -> list | None:
-    if "*deleting" in preview_output:
-        print
+def get_deletion_summary(preview_output: str) -> list:
+    preview_lines = preview_output.splitlines()
+    deletion_summary = []
+    for line in preview_lines:
+        if line.startswith("*deleting"):
+            deletion_summary.append(line)
+    return deletion_summary
