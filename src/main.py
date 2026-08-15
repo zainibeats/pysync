@@ -71,8 +71,10 @@ def main() -> None:
                         deletion_summary = get_deletion_summary(preview_output)
                         if deletion_summary:
                             formatted_deletion_summary = "\n".join(deletion_summary)
-                            print("These files will be removed:")
-                            user_confirmed_deletions = confirm_with_user(formatted_deletion_summary)
+                            user_confirmed_deletions = confirm_with_user(
+                                formatted_deletion_summary,
+                                confirmation_text="These files will be removed:"
+                            )
                             if not user_confirmed_deletions:
                                 continue
                     run_rsync_job(job, rsync_command)
