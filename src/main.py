@@ -58,16 +58,22 @@ def main() -> None:
     else:
         user_confirmed = confirm_with_user(proposed_commands)
 
-        # Loop through jobs, re-vaidate, and run
+        # Initialize failed jobs tuple
+        failed_jobs = []
+
+        # Loop through jobs and re-vaidate if user confirms
         if user_confirmed:
             for job, rsync_command, resolved_paths in valid_jobs:
                 is_command_valid = validate_rsync_command(job, resolved_paths)
                 if is_command_valid:
+                    # If the --delete flag is present in the job, find data that will be deleted using helper function
                     if "--delete" in job["extra_flags"]:
                         preview_command = build_preview(rsync_command)
                         preview_output = run_rsync_job(job, preview_command)
                         if preview_output is None:
+                            failed_jobs.append((job['name'], "preview"))
                             continue
+                        # If any data is to be deleted, confirm with user before running job
                         deletion_summary = get_deletion_summary(preview_output)
                         if deletion_summary:
                             formatted_deletion_summary = "\n".join(deletion_summary)
@@ -77,10 +83,25 @@ def main() -> None:
                             )
                             if not user_confirmed_deletions:
                                 continue
-                    run_rsync_job(job, rsync_command)
 
-            logger.info("Syncing complete!")
-            sys.exit(0)
+                    # Run rsync job and append the job name to the list of failed jobs
+                    result = run_rsync_job(job, rsync_command)
+                    if not result:
+                        failed_jobs.append((job['name'], "sync"))
+
+                # Re-validation of command failed -> add to failed jobs
+                else:
+                    failed_jobs.append((job['name'], "revalidation"))
+
+            # Log success/failures and end process
+            if failed_jobs:
+                for name, stage in failed_jobs:
+                    logger.error(f"Job '{name}' failed during {stage}")
+                sys.exit(1)
+            else:
+                logger.info("Syncing complete!")
+                sys.exit(0)
+        # User does not confirm the "You are about to run:" prompt
         else:
             logger.info("Quitting PySync...")
             sys.exit(0)
