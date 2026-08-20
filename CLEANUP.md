@@ -33,13 +33,10 @@ These issues could cause data loss or corruption in production. They should be a
 - [ ] **4. Duplicate names are not rejected (`validators.py:34-119`, `helpers.py:62-76`)**
   Jobs refer to sources and destinations by name, but validation does not enforce unique names. `resolve_job_paths()` silently uses the first matching entry. A duplicate name can make a job run against the wrong source or destination, which is especially dangerous when `--delete` is enabled. Duplicate *job* names should also be rejected — they make logs ambiguous about which job failed.
 
-- [ ] **5. Rsync failures are logged but not propagated (`executor.py:21-26`, `main.py:63-68`)**
-  `run_rsync_job()` catches `subprocess.CalledProcessError` and logs the failure, but it does not return a success/failure value or re-raise the exception. `main.py` then continues and logs "Syncing complete!" before exiting with code 0. For a backup tool, this is a data-integrity risk because users can believe a backup succeeded when rsync actually failed. The same applies when a job is silently dropped by the re-validation at `main.py:64-65` — the run still ends with "Syncing complete!" and exit 0.
-
-- [ ] **6. Dangerous path checks should use canonical paths, not raw strings (`helpers.py:41-85`)**
+- [ ] **5. Dangerous path checks should use canonical paths, not raw strings (`helpers.py:41-85`)**
   Any future same-path or nested-path validation should compare normalized/canonical paths, not the raw config strings. Paths like `~/Pictures`, `/home/user/Pictures`, paths with trailing slashes, and symlinks can refer to the same location while looking different as strings. Use tools such as `os.path.abspath()`, `os.path.realpath()`, and `os.path.commonpath()` after expanding `~`.
 
-- [ ] **7. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
+- [ ] **6. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
   rsync treats `src` and `src/` completely differently: `src` creates a `dst/src/` subdirectory while `src/` syncs the directory's contents into `dst`. Config paths pass through to the command unmodified. If a user adds or drops a trailing slash between runs of a `--delete` job, rsync restructures the destination and deletes the previous layout. Normalize source paths to one convention (and document it), or warn when the convention changes the meaning of an existing destination.
 
 ## 3. Important — Robustness
