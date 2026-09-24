@@ -3,8 +3,8 @@
 ## MVP Direction
 
 - **Interactive only** — the y/n confirmation prompt stays central; cron/unattended mode (lock file, `--yes` flag) is post-MVP.
-- **Allowlist for `extra_flags`** — replace the blocklist with a list of approved flags (see Critical #9).
-- **Dry-run preview for `--delete` jobs** — run `rsync --dry-run` first and show the deletion summary before the real run (see Critical #1).
+- **Allowlist for `extra_flags`** — replace the blocklist with a list of approved flags. *(done — `validators.py:20-28, 160-165`)*
+- **Dry-run preview for `--delete` jobs** — run `rsync --dry-run` first and show the deletion summary before the real run. *(done — `helpers.py:87-98`, `main.py:70-85`)*
 
 ## 1. Simplification Opportunities
 

@@ -4,7 +4,7 @@ from config_loader import load_config
 from executor import run_rsync_job
 from helpers import confirm_with_user, resolve_job_paths, build_preview, get_deletion_summary
 from logger import logger
-from validators import build_rsync_command, validate_config, validate_rsync_command
+from validators import build_rsync_command, validate_config, validate_path_overlap, validate_rsync_command
 
 
 # Main loop
@@ -44,6 +44,9 @@ def main() -> None:
             rsync_command = build_rsync_command(job, resolved_paths)
             is_command_valid = validate_rsync_command(job, resolved_paths)
             if is_command_valid:
+                user_confirmed_path_overlap = validate_path_overlap(resolved_paths)
+                if not user_confirmed_path_overlap:
+                    continue
                 valid_jobs.append((job, rsync_command, resolved_paths))
 
     # Loops through validated jobs, converts into strings

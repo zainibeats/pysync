@@ -1,6 +1,7 @@
 import os
+from pathlib import Path
 
-from helpers import expand_path, is_path_ready
+from helpers import confirm_with_user, expand_path, is_path_ready
 from logger import logger
 
 
@@ -175,6 +176,35 @@ def validate_config(config: dict) -> bool:
     return True
 
 
+def validate_path_overlap(resolved_paths: dict) -> bool:
+
+    src_path = os.path.realpath(resolved_paths["src_path"])
+    dst_path = os.path.realpath(resolved_paths["dst_path"])
+
+    if src_path == dst_path:
+        logger.error(f"Source and destination paths are identical!\nSource: {src_path}\nDestination: {dst_path}")
+        return False
+
+    elif Path(dst_path).is_relative_to(Path(src_path)):
+        logger.warning("Destination path is inside of the source path!")
+        user_confirmed = confirm_with_user(
+            preview_cmd=None,
+            confirmation_text=f"The destination path {dst_path} is nested in the source directory: {src_path}\nIs this intentional?"
+        )
+        return user_confirmed
+
+    elif Path(src_path).is_relative_to(Path(dst_path)):
+        logger.warning("Source path is inside of the destination path!")
+        user_confirmed = confirm_with_user(
+            preview_cmd=None,
+            confirmation_text=f"The source path {src_path} is nested in the destination directory: {dst_path}\nIs this intentional?"
+        )
+        return user_confirmed
+
+    else:
+        return True
+
+
 def validate_rsync_command(job: dict, resolved_paths: dict) -> bool:
     if not is_path_ready(
         resolved_paths["src_path"],
@@ -191,7 +221,7 @@ def validate_rsync_command(job: dict, resolved_paths: dict) -> bool:
         logger.warning(f"Destination not ready: {resolved_paths['dst_path']}")
         return False
     # Checks if '--delete' flag is to be ran on an empty source
-    elif "--delete" in job["extra_flags"]:
+    if "--delete" in job["extra_flags"]:
         try:
             list_src_dir = os.listdir(resolved_paths["src_path"])
             if not list_src_dir:

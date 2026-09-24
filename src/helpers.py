@@ -19,11 +19,15 @@ def is_path_ready(path: str, filesystem: str, mount_point=None) -> bool:
         return False
 
 
-def confirm_with_user(preview_cmd: str, confirmation_text: str ="You are about to run:") -> bool:
+def confirm_with_user(preview_cmd: str | None, confirmation_text: str ="You are about to run:") -> bool:
     attempts = 0
+    confirmation_preview = confirmation_text
+    if preview_cmd:
+        confirmation_preview += f"\n{preview_cmd}"
+    confirmation_preview += "\n\ny or n?: "
     while attempts < 4:
         user_input = (
-            input(f"{confirmation_text}\n{preview_cmd}\n\ny or n?: ").strip().lower()
+            input(confirmation_preview).strip().lower()
         )
         if user_input == "y":
             return True
