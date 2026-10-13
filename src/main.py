@@ -87,6 +87,12 @@ def main() -> None:
                             if not user_confirmed_deletions:
                                 continue
 
+                            # Re-validate commands after deletion prompt
+                            is_command_revalidated = validate_rsync_command(job, resolved_paths)
+                            if not is_command_revalidated:
+                                failed_jobs.append((job['name'], "revalidation"))
+                                continue
+
                     # Run rsync job and append the job name to the list of failed jobs
                     result = run_rsync_job(job, rsync_command)
                     if not result:
