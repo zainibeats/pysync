@@ -3,8 +3,8 @@
 ## MVP Direction
 
 - **Interactive only** — the y/n confirmation prompt stays central; cron/unattended mode (lock file, `--yes` flag) is post-MVP.
-- **Allowlist for `extra_flags`** — replace the blocklist with a list of approved flags (see Critical #9).
-- **Dry-run preview for `--delete` jobs** — run `rsync --dry-run` first and show the deletion summary before the real run (see Critical #1).
+- **Allowlist for `extra_flags`** — replace the blocklist with a list of approved flags. *Done: `allowed_extra_flags` in `validators.py`.*
+- **Dry-run preview for `--delete` jobs** — run `rsync --dry-run` first and show the deletion summary before the real run. *Done: `build_preview()` / `get_deletion_summary()`; the re-check after its prompt is Critical 2.7.*
 
 ## 1. Simplification Opportunities
 
@@ -50,8 +50,10 @@ These issues could cause data loss or corruption in production. They should be a
 - [ ] **6. Trailing-slash semantics on source paths are not normalized (`validators.py:8-14`, `helpers.py:62-68`)**
   rsync treats `src` and `src/` completely differently: `src` creates a `dst/src/` subdirectory while `src/` syncs the directory's contents into `dst`. Config paths pass through to the command unmodified. If a user adds or drops a trailing slash between runs of a `--delete` job, rsync restructures the destination and deletes the previous layout. Normalize source paths to one convention (and document it), or warn when the convention changes the meaning of an existing destination.
 
-- [ ] **7. Nothing is re-checked after the deletion prompt (`main.py:83-91`)** *(found in testing)*
+- [x] **7. Nothing is re-checked after the deletion prompt (`main.py:83-91`)** *(found in testing)*
   Readiness and the empty-source guard are re-checked after the main "You are about to run" prompt, but not after the `--delete` deletion prompt, which can stay open for any length of time. In testing, the NFS source (a mount root with a trailing slash) was unmounted while the deletion prompt was open. The preview listed one file, the user answered "y", and rsync then deleted **every** file in the destination and reported "Syncing complete!". An external source drive unplugged at that moment would do the same. Re-run `validate_rsync_command()` right before the real rsync run, after the deletion prompt.
+
+  *Fixed (2026-10-13) in `345c224`:* `validate_rsync_command()` now runs again after the user confirms the deletions (`main.py:90-94`). If it fails, the job is recorded as failed (stage `"revalidation"`) and skipped, so rsync never runs. The re-check is only as strong as the readiness checks behind it, so the `external` drive case stays open until 2.2 and 2.9 are done.
 
 - [ ] **8. An `nfs` path is not checked to be inside its `mount_point` (`helpers.py:11-16`)** *(found in testing)*
   `is_path_ready()` only checks that `mount_point` is mounted. If `path` is not under `mount_point` (e.g. a typo), the job still runs and writes to the local disk. Check that the resolved `path` is inside the resolved `mount_point`.
